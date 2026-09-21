@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#d92d73">
+  <title>Hệ thống quản lý bãi đỗ xe AI</title>
+  <link rel="stylesheet" href="theme-base.css">
+  <link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div id="login-box">
+  <div class="login-brand">PARKING <span>AI</span></div>
+  <h2>Đăng nhập hệ thống</h2>
+  <p class="muted">Quản lý bãi đỗ xe, doanh thu và phân tích AI trên một nền tảng.</p>
+  <div class="login-tabs" role="tablist" aria-label="Tài khoản">
+    <button class="login-tab active" id="login-tab-btn" onclick="showLoginPanel('login-panel')">Đăng nhập</button>
+    <button class="login-tab" id="register-tab-btn" onclick="showLoginPanel('register-panel')">Tạo tài khoản</button>
+  </div>
+
+  <div id="login-panel" class="auth-panel">
+    <input id="li-user" autocomplete="username" aria-label="Tài khoản" placeholder="Tài khoản">
+    <input id="li-pass" type="password" autocomplete="current-password" aria-label="Mật khẩu" placeholder="Mật khẩu">
+    <button class="btn" onclick="dangNhap()">Đăng nhập</button>
+    <div id="li-msg"></div>
+  </div>
+
+  <div id="register-panel" class="auth-panel hidden">
+    <input id="reg-name" aria-label="Họ tên" placeholder="Họ và tên">
+    <input id="reg-user" autocomplete="username" aria-label="Tài khoản mới" placeholder="Tài khoản mới">
+    <input id="reg-pass" type="password" autocomplete="new-password" aria-label="Mật khẩu mới" placeholder="Mật khẩu">
+    <input id="reg-pass2" type="password" autocomplete="new-password" aria-label="Nhập lại mật khẩu" placeholder="Nhập lại mật khẩu">
+    <select id="reg-role" aria-label="Vai trò">
+      <option value="nhan_vien">Nhân viên</option>
+      <option value="quan_ly">Quản lý</option>
+    </select>
+    <button class="btn" onclick="dangKyTaiKhoan('register')">Tạo tài khoản</button>
+    <div id="reg-msg"></div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <div class="brand-wordmark" aria-label="Parking AI">PARKING <span>AI</span></div>
+    <div class="header-user"><span id="whoami"></span><button class="btn secondary" onclick="dangXuat()">Đăng xuất</button></div>
+  </header>
+
+  <div class="app-layout">
+    <aside class="sidebar" aria-label="Điều hướng chức năng">
+      <div class="sidebar-heading">
+        <div class="sidebar-title">CHỨC NĂNG</div>
+        <div class="sidebar-subtitle">Trung tâm điều hành</div>
+      </div>
+      <div id="nav-home-slot"></div>
+      <nav id="nav-tabs" aria-label="Chức năng chính"></nav>
+    </aside>
+
+    <main>
+      <section id="tab-home" class="tabpage">
+        <div class="hero-card card hero-banner">
+          <div id="hero-media" class="hero-media">
+            <img id="home-image" alt="Ảnh minh họa bãi đỗ xe">
+          </div>
+          <div class="hero-overlay"></div>
+          <label class="upload-image-btn btn secondary">
+            Đổi ảnh nền
+            <input id="home-image-input" type="file" accept="image/*" onchange="handleHomeImage(event)">
+          </label>
+          <div class="hero-copy">
+            <div class="eyebrow">TRUNG TÂM ĐIỀU HÀNH</div>
+            <h1>CHÀO MỪNG ĐẾN VỚI <span>PARKING AI</span></h1>
+            <p>Quản lý phương tiện, vị trí đỗ, doanh thu và ra quyết định vận hành trên cùng một màn hình.</p>
+            <div class="quick-actions">
+              <button class="quick-action" onclick="showSub('tab-nghiepvu','card-xevao', this)"><span class="qa-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="5" y="14" width="16" height="9" rx="2"></rect><circle cx="9" cy="24" r="2"></circle><circle cx="17" cy="24" r="2"></circle><path d="M22 14 L27 14 L27 20 L22 20" fill="none"></path><path d="M23 11 L27 14 L23 17"></path></svg></span><b>Ghi nhận xe vào</b><small>Tiếp nhận xe mới</small></button>
+              <button class="quick-action" onclick="showSub('tab-nghiepvu','card-xera', this)"><span class="qa-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="11" y="14" width="16" height="9" rx="2"></rect><circle cx="15" cy="24" r="2"></circle><circle cx="23" cy="24" r="2"></circle><path d="M10 14 L5 14 L5 20 L10 20" fill="none"></path><path d="M9 11 L5 14 L9 17"></path></svg></span><b>Ghi nhận xe ra</b><small>Tính phí & hoàn tất</small></button>
+              <button class="quick-action" onclick="showSub('tab-nghiepvu','card-chotrong', this)"><span class="qa-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><rect x="6" y="5" width="20" height="22" rx="3" fill="none"></rect><path d="M12 10 H18 A4 4 0 0 1 18 18 H12 Z" fill="none"></path><path d="M12 18 V23" fill="none"></path></svg></span><b>Xem chỗ trống</b><small>Kiểm tra theo khu vực</small></button>
+              <button id="qa-trolyai" class="quick-action" onclick="showSub('tab-ai','card-aihoidap', this)"><span class="qa-icon" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M16 4 L19 13 L28 16 L19 19 L16 28 L13 19 L4 16 L13 13 Z"></path></svg></span><b>Trợ lý AI</b><small>Hỏi đáp & phân tích</small></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="card summary-card">
+            <div class="section-kicker">TÌNH TRẠNG BÃI XE</div>
+            <h2>Tổng quan nhanh</h2>
+            <div id="home-occupancy" class="dashboard-list">Đang tải dữ liệu...</div>
+          </div>
+          <div class="card summary-card">
+            <div class="section-kicker">THÔNG BÁO</div>
+            <h2>Thông báo vận hành</h2>
+            <div id="home-notices" class="notice-list">Đang tải thông báo...</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-nghiepvu" class="tabpage hidden">
+        <div class="card page-intro"><div class="section-kicker">NGHIỆP VỤ</div><h1>Điều hành xe ra vào</h1><p>Thực hiện các thao tác tại cổng và kiểm soát vị trí đỗ.</p></div>
+        <div id="card-xevao" class="card subpage-card">
+          <div class="section-kicker">NGHIỆP VỤ › XE VÀO</div>
+          <h2>Ghi nhận xe vào</h2>
+          <p class="muted">Nhập đầy đủ biển số, loại xe, khu vực, vị trí đỗ và thời gian gửi xe để hệ thống tính đúng phí khi xe ra.</p>
+          <div class="grid">
+            <input id="in-bienso-vao" required aria-label="Biển số xe vào" placeholder="Biển số xe * (VD: 30A-1234)" maxlength="12">
+            <select id="in-loaixe" required aria-label="Loại xe"></select>
+            <select id="in-khuvuc" required aria-label="Khu vực" onchange="taiViTriTrong()"></select>
+            <select id="in-vitri" required aria-label="Vị trí đỗ"><option value="">— Chọn vị trí đỗ * —</option></select>
+            <select id="in-hinhthuc" required aria-label="Thời gian gửi xe"></select>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <input id="in-chuxe" aria-label="Chủ xe" placeholder="Chủ xe (tuỳ chọn)">
+            <input id="in-sdt" aria-label="Số điện thoại" placeholder="SĐT (10 số, bắt đầu bằng 0)" maxlength="10">
+          </div>
+          <button class="btn" style="margin-top:10px" onclick="xeVao()">Xác nhận xe vào</button>
+          <div id="msg-xevao"></div>
+        </div>
+
+        <div id="card-xera" class="card subpage-card">
+          <div class="section-kicker">NGHIỆP VỤ › XE RA</div>
+          <h2>Ghi nhận xe ra & tính phí</h2>
+          <p class="muted">Có thể kết hợp biển số, tên chủ xe, số điện thoại — càng nhập nhiều thông tin, kết quả tìm càng chính xác khi có nhiều xe trùng thông tin.</p>
+          <div class="grid">
+            <input id="out-bienso" aria-label="Biển số xe ra" placeholder="Biển số xe" oninput="xemTruocXeRa()">
+            <input id="out-chuxe" aria-label="Tên chủ xe" placeholder="Tên chủ xe (tuỳ chọn)" oninput="xemTruocXeRa()">
+            <input id="out-sdt" aria-label="Số điện thoại" placeholder="Số điện thoại (tuỳ chọn)" oninput="xemTruocXeRa()">
+          </div>
+          <div class="row" style="margin-top:9px">
+            <select id="out-hinhthuc" aria-label="Xác nhận thời gian gửi xe"><option value="">— Giữ nguyên hình thức lúc gửi xe —</option></select>
+            <button class="btn secondary" onclick="xemTruocXeRa()">Kiểm tra thông tin</button>
+            <button class="btn" onclick="xeRa()">Xác nhận xe ra / tính phí</button>
+          </div>
+          <div id="xera-preview"></div>
+          <div id="msg-xera"></div>
+        </div>
+
+        <div id="card-chotrong" class="card subpage-card">
+          <div class="section-kicker">NGHIỆP VỤ › CHỖ TRỐNG</div>
+          <h2>Chỗ trống theo khu vực</h2>
+          <button class="btn secondary" onclick="taiChoTrong()">Làm mới</button>
+          <div id="cho-trong-view"></div>
+        </div>
+
+        <div id="card-tracuu" class="card subpage-card">
+          <div class="section-kicker">NGHIỆP VỤ › TRA CỨU</div>
+          <h2>Tra cứu lượt gửi xe</h2>
+          <p class="muted">Có thể kết hợp bất kỳ thông tin nào bên dưới — càng nhập nhiều, kết quả càng chính xác khi có nhiều người trùng thông tin.</p>
+          <div class="grid">
+            <input id="tc-bienso" aria-label="Biển số" placeholder="Biển số">
+            <input id="tc-ten" aria-label="Tên chủ xe" placeholder="Tên chủ xe">
+            <input id="tc-sdt" aria-label="Số điện thoại" placeholder="Số điện thoại">
+            <select id="tc-loaixe" aria-label="Loại xe"><option value="">— Mọi loại xe —</option></select>
+            <select id="tc-khuvuc" aria-label="Khu vực"><option value="">— Mọi khu vực —</option></select>
+            <select id="tc-trangthai" aria-label="Trạng thái">
+              <option value="">— Mọi trạng thái —</option>
+              <option value="dang_gui">Đang gửi</option>
+              <option value="hoan_tat">Đã hoàn tất</option>
+            </select>
+          </div>
+          <div class="row" style="margin-top:9px">
+            <input id="tc-tu" type="date" aria-label="Từ ngày">
+            <input id="tc-den" type="date" aria-label="Đến ngày">
+            <button class="btn" onclick="traCuu()">Tìm kiếm</button>
+          </div>
+          <div id="tra-cuu-view"></div>
+        </div>
+      </section>
+
+      <section id="tab-quantri" class="tabpage hidden">
+        <div class="card page-intro"><div class="section-kicker">QUẢN TRỊ & THỐNG KÊ</div><h1>Điều hành hệ thống</h1><p>Quản lý danh mục và thống kê lưu lượng, doanh thu.</p></div>
+        <div id="card-danhmuc" class="card subpage-card">
+          <div class="section-kicker">QUẢN TRỊ › DANH MỤC</div>
+          <h2>Danh mục vận hành</h2>
+          <div class="grid">
+            <div><b>Thêm khu vực</b><input id="dm-khuvuc-ten" placeholder="Tên khu vực"><button class="btn" onclick="themKhuVuc()">Thêm khu vực</button></div>
+            <div><b>Thêm loại xe</b><input id="dm-loaixe-ten" placeholder="Tên loại xe"><button class="btn" onclick="themLoaiXe()">Thêm loại xe</button></div>
+            <div>
+              <b>Thêm vị trí đỗ</b>
+              <select id="dm-vitri-khuvuc" aria-label="Khu vực cho vị trí"></select>
+              <input id="dm-vitri-ma" placeholder="Mã vị trí, ví dụ A-11">
+              <button class="btn" onclick="themViTri()">Thêm vị trí</button>
+              <div class="vitri-hangloat">
+                <small class="muted">Hoặc tạo hàng loạt theo chữ cái đầu (VD: A → A1, A2, ...):</small>
+                <div class="row" style="margin-top:6px">
+                  <input id="dm-vitri-tienlo" placeholder="Chữ cái đầu, VD: A" maxlength="4" style="max-width:140px">
+                  <button class="btn secondary" onclick="themViTriHangLoat(10)">+10</button>
+                  <button class="btn secondary" onclick="themViTriHangLoat(50)">+50</button>
+                  <button class="btn secondary" onclick="themViTriHangLoat(100)">+100</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <b>Thêm bảng giá</b>
+              <select id="dm-gia-loaixe" aria-label="Loại xe cho bảng giá"></select>
+              <select id="dm-gia-khung" aria-label="Thời gian gửi xe"></select>
+              <input id="dm-gia-dongia" type="number" placeholder="Đơn giá (VNĐ)">
+              <small class="muted">Sáng/chiều/tối/qua đêm: đơn giá theo GIỜ. Theo tháng: đơn giá theo chu kỳ 30 NGÀY.</small>
+              <button class="btn" onclick="themBangGia()">Thêm bảng giá</button>
+            </div>
+          </div>
+          <div id="msg-danhmuc"></div>
+
+          <div class="manage-block">
+            <div class="manage-block-title">Khu vực hiện có</div>
+            <div id="list-khuvuc" class="manage-list"></div>
+          </div>
+          <div class="manage-block">
+            <div class="manage-block-title">Loại xe hiện có</div>
+            <div id="list-loaixe" class="manage-list"></div>
+          </div>
+          <div class="manage-block">
+            <div class="manage-block-title">Vị trí đỗ hiện có</div>
+            <div id="list-vitri" class="manage-list"></div>
+          </div>
+          <div class="manage-block">
+            <div class="manage-block-title">Bảng giá hiện có</div>
+            <div id="list-banggia" class="manage-list"></div>
+          </div>
+        </div>
+
+        <div id="card-thongke" class="card subpage-card">
+          <div class="section-kicker">QUẢN TRỊ › THỐNG KÊ</div>
+          <h2>Thống kê lưu lượng & doanh thu</h2>
+          <div class="row"><input id="tk-tu" type="date" aria-label="Từ ngày"><input id="tk-den" type="date" aria-label="Đến ngày"><button class="btn" onclick="taiThongKe()">Xem thống kê</button></div>
+          <div id="thong-ke-view"></div>
+        </div>
+      </section>
+
+      <section id="tab-ai" class="tabpage hidden">
+        <div class="card page-intro"><div class="section-kicker">TRỢ LÝ AI</div><h1>Phân tích & hỗ trợ vận hành</h1><p>Hỏi đáp, báo cáo lưu lượng và gợi ý bố trí nhân sự.</p></div>
+        <div id="card-aibaocao" class="card subpage-card">
+          <div class="section-kicker">AI › BÁO CÁO</div>
+          <h2>✦ Báo cáo lưu lượng tự động</h2>
+          <div class="row"><input id="ai-bc-tu" type="date" aria-label="Báo cáo từ ngày"><input id="ai-bc-den" type="date" aria-label="Báo cáo đến ngày"><button class="btn" onclick="sinhBaoCao()">Sinh báo cáo</button></div>
+          <div id="ai-bc-view" class="msg"></div>
+        </div>
+
+        <div id="card-aihoidap" class="card subpage-card">
+          <div class="section-kicker">AI › HỎI ĐÁP</div>
+          <h2>💬 Hỏi đáp quản trị với AI</h2>
+          <div class="chat-log" id="chat-log" aria-live="polite"></div>
+          <div class="row"><input id="ai-cauhoi" placeholder="Ví dụ: Khung giờ nào đông nhất tuần này?"><button class="btn" onclick="hoiDap()">Gửi câu hỏi</button></div>
+        </div>
+
+        <div id="card-ainhansu" class="card subpage-card">
+          <div class="section-kicker">AI › NHÂN SỰ</div>
+          <h2>👥 Gợi ý bố trí nhân sự</h2>
+          <div class="row"><input id="ai-ns-tu" type="date" aria-label="Gợi ý từ ngày"><input id="ai-ns-den" type="date" aria-label="Gợi ý đến ngày"><button class="btn" onclick="goiYNhanSu()">Lấy gợi ý</button></div>
+          <div id="ai-ns-view" class="msg"></div>
+        </div>
+
+        <div id="card-ailichsu" class="card subpage-card">
+          <div class="section-kicker">AI › LỊCH SỬ</div>
+          <h2>Lịch sử hỏi đáp AI</h2>
+          <button class="btn secondary" onclick="taiLichSu()">Làm mới</button>
+          <div id="lich-su-view"></div>
+        </div>
+      </section>
+
+      <section id="tab-taikhoan" class="tabpage hidden">
+        <div class="card page-intro"><div class="section-kicker">TÀI KHOẢN</div><h1>Tạo tài khoản quản lý / nhân viên</h1><p>Chức năng này dành cho tài khoản quản lý.</p></div>
+        <div id="card-taikhoan" class="card subpage-card">
+          <div class="account-form-grid grid">
+            <input id="acc-name" placeholder="Họ và tên">
+            <input id="acc-user" placeholder="Tài khoản">
+            <input id="acc-pass" type="password" placeholder="Mật khẩu">
+            <select id="acc-role"><option value="nhan_vien">Nhân viên</option><option value="quan_ly">Quản lý</option></select>
+          </div>
+          <button class="btn" onclick="dangKyTaiKhoan('admin')">Tạo tài khoản</button>
+          <div id="msg-taikhoan"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
