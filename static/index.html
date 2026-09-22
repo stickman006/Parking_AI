@@ -126,8 +126,21 @@
           <div class="row" style="margin-top:9px">
             <select id="out-hinhthuc" aria-label="Xác nhận thời gian gửi xe"><option value="">— Giữ nguyên hình thức lúc gửi xe —</option></select>
             <button class="btn secondary" onclick="xemTruocXeRa()">Kiểm tra thông tin</button>
-            <button class="btn" onclick="xeRa()">Xác nhận xe ra / tính phí</button>
           </div>
+
+          <div class="ve-xe-block">
+            <div class="ve-xe-title">Tình trạng vé gửi xe</div>
+            <div class="ve-xe-options">
+              <label class="ve-xe-radio"><input type="radio" name="ve-xe-tinh-trang" value="co-ve" checked onchange="doiTinhTrangVe()"> Có vé</label>
+              <label class="ve-xe-radio"><input type="radio" name="ve-xe-tinh-trang" value="mat-ve" onchange="doiTinhTrangVe()"> Mất vé <span class="ve-xe-phuphi">(+10.000đ)</span></label>
+            </div>
+            <div id="mat-ve-block" class="hidden">
+              <p class="muted">Khách mất vé cần cung cấp thông tin chứng minh là chủ xe (CCCD/hộ chiếu, đặc điểm nhận dạng xe...) trước khi cho xe ra.</p>
+              <input id="out-chungminh" aria-label="Thông tin chứng minh chủ xe" placeholder="VD: CCCD 001234567890, xe màu đỏ có decal ABC...">
+            </div>
+          </div>
+
+          <button class="btn" style="margin-top:12px" onclick="xeRa()">Xác nhận xe ra / tính phí</button>
           <div id="xera-preview"></div>
           <div id="msg-xera"></div>
         </div>
@@ -179,8 +192,8 @@
               <button class="btn" onclick="themViTri()">Thêm vị trí</button>
               <div class="vitri-hangloat">
                 <small class="muted">Hoặc tạo hàng loạt theo chữ cái đầu (VD: A → A1, A2, ...):</small>
-                <div class="row" style="margin-top:6px">
-                  <input id="dm-vitri-tienlo" placeholder="Chữ cái đầu, VD: A" maxlength="4" style="max-width:140px">
+                <input id="dm-vitri-tienlo" placeholder="Chữ cái đầu, VD: A" maxlength="4" style="margin-top:6px">
+                <div class="row vitri-hangloat-buttons">
                   <button class="btn secondary" onclick="themViTriHangLoat(10)">+10</button>
                   <button class="btn secondary" onclick="themViTriHangLoat(50)">+50</button>
                   <button class="btn secondary" onclick="themViTriHangLoat(100)">+100</button>
@@ -199,19 +212,51 @@
           <div id="msg-danhmuc"></div>
 
           <div class="manage-block">
-            <div class="manage-block-title">Khu vực hiện có</div>
+            <div class="manage-block-title">
+              <span>Khu vực hiện có</span>
+              <div class="manage-bulk-actions">
+                <span id="count-khuvuc" class="manage-bulk-count"></span>
+                <label class="chon-tat-ca"><input type="checkbox" onchange="chonTatCa('list-khuvuc','count-khuvuc',this)"> Chọn tất cả</label>
+                <button class="btn secondary" onclick="luuKhuVucDaChon()">Lưu đã chọn</button>
+                <button class="btn danger" onclick="xoaKhuVucDaChon()">Xoá đã chọn</button>
+              </div>
+            </div>
             <div id="list-khuvuc" class="manage-list"></div>
           </div>
           <div class="manage-block">
-            <div class="manage-block-title">Loại xe hiện có</div>
+            <div class="manage-block-title">
+              <span>Loại xe hiện có</span>
+              <div class="manage-bulk-actions">
+                <span id="count-loaixe" class="manage-bulk-count"></span>
+                <label class="chon-tat-ca"><input type="checkbox" onchange="chonTatCa('list-loaixe','count-loaixe',this)"> Chọn tất cả</label>
+                <button class="btn secondary" onclick="luuLoaiXeDaChon()">Lưu đã chọn</button>
+                <button class="btn danger" onclick="xoaLoaiXeDaChon()">Xoá đã chọn</button>
+              </div>
+            </div>
             <div id="list-loaixe" class="manage-list"></div>
           </div>
           <div class="manage-block">
-            <div class="manage-block-title">Vị trí đỗ hiện có</div>
+            <div class="manage-block-title">
+              <span>Vị trí đỗ hiện có</span>
+              <div class="manage-bulk-actions">
+                <span id="count-vitri" class="manage-bulk-count"></span>
+                <label class="chon-tat-ca"><input type="checkbox" onchange="chonTatCa('list-vitri','count-vitri',this)"> Chọn tất cả</label>
+                <button class="btn secondary" onclick="luuViTriDaChon()">Lưu đã chọn</button>
+                <button class="btn danger" onclick="xoaViTriDaChon()">Xoá đã chọn</button>
+              </div>
+            </div>
             <div id="list-vitri" class="manage-list"></div>
           </div>
           <div class="manage-block">
-            <div class="manage-block-title">Bảng giá hiện có</div>
+            <div class="manage-block-title">
+              <span>Bảng giá hiện có</span>
+              <div class="manage-bulk-actions">
+                <span id="count-banggia" class="manage-bulk-count"></span>
+                <label class="chon-tat-ca"><input type="checkbox" onchange="chonTatCa('list-banggia','count-banggia',this)"> Chọn tất cả</label>
+                <button class="btn secondary" onclick="luuBangGiaDaChon()">Lưu đã chọn</button>
+                <button class="btn danger" onclick="xoaBangGiaDaChon()">Xoá đã chọn</button>
+              </div>
+            </div>
             <div id="list-banggia" class="manage-list"></div>
           </div>
         </div>

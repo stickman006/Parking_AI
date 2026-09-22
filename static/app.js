@@ -16,8 +16,29 @@ async function apiFetch(path, options = {}) {
     },
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || "Lỗi không xác định");
+  if (!res.ok) throw new Error(dinhDangLoiApi(data));
   return data;
+}
+
+// FastAPI trả lỗi validate (422) dưới dạng data.detail là MẢNG các object
+// {loc, msg, ...} chứ không phải chuỗi - nếu ném thẳng vào Error() sẽ hiện
+// "[object Object],[object Object]" thay vì nội dung lỗi. Hàm này gom lại
+// thành 1 câu tiếng Việt dễ hiểu, dù detail là chuỗi hay mảng lỗi validate.
+function dinhDangLoiApi(data) {
+  const detail = data && data.detail;
+  if (!detail) return "Lỗi không xác định";
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail.map(loi => {
+      if (typeof loi === "string") return loi;
+      const truong = Array.isArray(loi.loc) ? loi.loc[loi.loc.length - 1] : "";
+      // Pydantic tự thêm tiền tố "Value error, " trước thông báo lỗi tuỳ
+      // biến của mình - bỏ đi cho gọn, chỉ giữ lại nội dung có ích.
+      const noiDung = (loi.msg || "Dữ liệu không hợp lệ").replace(/^Value error,\s*/i, "");
+      return truong && truong !== "body" ? `${truong}: ${noiDung}` : noiDung;
+    }).join("; ");
+  }
+  return String(detail);
 }
 
 function showMsg(elId, text, ok = true) {
@@ -399,7 +420,8 @@ function renderKhuVucList(items) {
   const el = document.getElementById("list-khuvuc");
   if (!el) return;
   el.innerHTML = items.map(kv => `
-    <div class="manage-row" data-id="${kv.id}">
+    <div class="manage-row" data-id="${kv.id}" style="grid-template-columns:auto 1fr 1fr auto">
+      <input type="checkbox" class="mr-check" onchange="capNhatSoLuongDaChon('list-khuvuc','count-khuvuc')">
       <input class="mr-ten" value="${escapeHtml(kv.ten_khu_vuc)}" placeholder="Tên khu vực">
       <input class="mr-mota" value="${escapeHtml(kv.mo_ta || "")}" placeholder="Mô tả (tuỳ chọn)">
       <div class="manage-row-actions">
@@ -425,13 +447,19 @@ async function xoaKhuVuc(id) {
     showMsg("msg-danhmuc", "Đã xoá khu vực."); taiDanhMuc(); taiChoTrong();
   } catch (e) { showMsg("msg-danhmuc", e.message, false); }
 }
+const luuKhuVucDaChon = () => luuDaChonChung("list-khuvuc", row => {
+  const ten_khu_vuc = row.querySelector(".mr-ten").value.trim();
+  return ten_khu_vuc ? { ten_khu_vuc, mo_ta: row.querySelector(".mr-mota").value.trim() || null } : null;
+}, "/api/danh-muc/khu-vuc", "khu vực", "count-khuvuc");
+const xoaKhuVucDaChon = () => xoaDaChonChung("list-khuvuc", "/api/danh-muc/khu-vuc", "khu vực", "count-khuvuc");
 
 // ----- Loại xe: sửa / xoá -----
 function renderLoaiXeList(items) {
   const el = document.getElementById("list-loaixe");
   if (!el) return;
   el.innerHTML = items.map(lx => `
-    <div class="manage-row" data-id="${lx.id}" style="grid-template-columns:1fr auto">
+    <div class="manage-row" data-id="${lx.id}" style="grid-template-columns:auto 1fr auto">
+      <input type="checkbox" class="mr-check" onchange="capNhatSoLuongDaChon('list-loaixe','count-loaixe')">
       <input class="mr-ten" value="${escapeHtml(lx.ten_loai_xe)}" placeholder="Tên loại xe">
       <div class="manage-row-actions">
         <button class="btn secondary" onclick="suaLoaiXe(${lx.id}, this)">Lưu</button>
@@ -455,6 +483,11 @@ async function xoaLoaiXe(id) {
     showMsg("msg-danhmuc", "Đã xoá loại xe."); taiDanhMuc();
   } catch (e) { showMsg("msg-danhmuc", e.message, false); }
 }
+const luuLoaiXeDaChon = () => luuDaChonChung("list-loaixe", row => {
+  const ten_loai_xe = row.querySelector(".mr-ten").value.trim();
+  return ten_loai_xe ? { ten_loai_xe } : null;
+}, "/api/danh-muc/loai-xe", "loại xe", "count-loaixe");
+const xoaLoaiXeDaChon = () => xoaDaChonChung("list-loaixe", "/api/danh-muc/loai-xe", "loại xe", "count-loaixe");
 
 // ----- Vị trí đỗ: sửa / xoá -----
 function renderViTriList(items, khuVuc, loaiXe) {
@@ -463,7 +496,8 @@ function renderViTriList(items, khuVuc, loaiXe) {
   const tenKhuVuc = id => khuVuc.find(k => k.id === id)?.ten_khu_vuc || `#${id}`;
   const optionsLoaiXe = current => `<option value="">— Mọi loại xe —</option>` + loaiXe.map(lx => `<option value="${lx.id}" ${current === lx.id ? "selected" : ""}>${escapeHtml(lx.ten_loai_xe)}</option>`).join("");
   el.innerHTML = items.map(vt => `
-    <div class="manage-row" data-id="${vt.id}" style="grid-template-columns:.8fr 1fr 1fr auto">
+    <div class="manage-row" data-id="${vt.id}" style="grid-template-columns:auto .8fr 1fr 1fr auto">
+      <input type="checkbox" class="mr-check" onchange="capNhatSoLuongDaChon('list-vitri','count-vitri')">
       <span class="muted">${escapeHtml(tenKhuVuc(vt.khu_vuc_id))} <span class="badge ${vt.trang_thai}">${vt.trang_thai === "trong" ? "Trống" : "Đã đỗ"}</span></span>
       <input class="mr-ma" value="${escapeHtml(vt.ma_vi_tri)}" placeholder="Mã vị trí">
       <select class="mr-loaixe">${optionsLoaiXe(vt.loai_xe_cho_phep)}</select>
@@ -490,6 +524,13 @@ async function xoaViTriDanhMuc(id) {
     showMsg("msg-danhmuc", "Đã xoá vị trí."); taiDanhMuc(); taiChoTrong();
   } catch (e) { showMsg("msg-danhmuc", e.message, false); }
 }
+const luuViTriDaChon = () => luuDaChonChung("list-vitri", row => {
+  const ma_vi_tri = row.querySelector(".mr-ma").value.trim();
+  if (!ma_vi_tri) return null;
+  const loaiXeVal = row.querySelector(".mr-loaixe").value;
+  return { ma_vi_tri, loai_xe_cho_phep: loaiXeVal ? Number(loaiXeVal) : null };
+}, "/api/danh-muc/vi-tri", "vị trí", "count-vitri");
+const xoaViTriDaChon = () => xoaDaChonChung("list-vitri", "/api/danh-muc/vi-tri", "vị trí", "count-vitri");
 
 // ----- Bảng giá: sửa / xoá -----
 function renderBangGiaList(items, loaiXe) {
@@ -498,7 +539,8 @@ function renderBangGiaList(items, loaiXe) {
   const optionsLoaiXe = current => loaiXe.map(lx => `<option value="${lx.id}" ${current === lx.id ? "selected" : ""}>${escapeHtml(lx.ten_loai_xe)}</option>`).join("");
   const optionsKhung = current => Object.entries(KHUNG_GIO_LABEL).map(([k, label]) => `<option value="${k}" ${current === k ? "selected" : ""}>${label}</option>`).join("");
   el.innerHTML = items.map(bg => `
-    <div class="manage-row" data-id="${bg.id}" style="grid-template-columns:1fr 1fr 1fr auto">
+    <div class="manage-row" data-id="${bg.id}" style="grid-template-columns:auto 1fr 1fr 1fr auto">
+      <input type="checkbox" class="mr-check" onchange="capNhatSoLuongDaChon('list-banggia','count-banggia')">
       <select class="mr-loaixe">${optionsLoaiXe(bg.loai_xe_id)}</select>
       <select class="mr-khung">${optionsKhung(bg.khung_gio)}</select>
       <input class="mr-gia" type="number" value="${bg.don_gia}" placeholder="Đơn giá">
@@ -524,6 +566,52 @@ async function xoaBangGiaDanhMuc(id) {
     await apiFetch(`/api/danh-muc/bang-gia/${id}`, { method: "DELETE" });
     showMsg("msg-danhmuc", "Đã xoá bảng giá."); taiDanhMuc();
   } catch (e) { showMsg("msg-danhmuc", e.message, false); }
+}
+const luuBangGiaDaChon = () => luuDaChonChung("list-banggia", row => ({
+  loai_xe_id: Number(row.querySelector(".mr-loaixe").value),
+  khung_gio: row.querySelector(".mr-khung").value,
+  don_gia: Number(row.querySelector(".mr-gia").value),
+}), "/api/danh-muc/bang-gia", "bảng giá", "count-banggia");
+const xoaBangGiaDaChon = () => xoaDaChonChung("list-banggia", "/api/danh-muc/bang-gia", "bảng giá", "count-banggia");
+
+// ----- Chọn nhiều mục cùng lúc để sửa/xoá hàng loạt (dùng chung cho 4 danh sách) -----
+function dsHangDaChon(listElId) {
+  return Array.from(document.querySelectorAll(`#${listElId} .mr-check:checked`)).map(cb => cb.closest(".manage-row"));
+}
+function capNhatSoLuongDaChon(listElId, countElId) {
+  const soLuong = document.querySelectorAll(`#${listElId} .mr-check:checked`).length;
+  const countEl = document.getElementById(countElId);
+  if (countEl) countEl.textContent = soLuong > 0 ? `Đã chọn ${soLuong}` : "";
+}
+function chonTatCa(listElId, countElId, checkboxEl) {
+  document.querySelectorAll(`#${listElId} .mr-check`).forEach(cb => cb.checked = checkboxEl.checked);
+  capNhatSoLuongDaChon(listElId, countElId);
+}
+async function luuDaChonChung(listElId, layBody, endpointPrefix, tenSoNhieu, countElId) {
+  const rows = dsHangDaChon(listElId);
+  if (!rows.length) return showMsg("msg-danhmuc", `Chưa chọn ${tenSoNhieu} nào.`, false);
+  // Đọc hết dữ liệu từng dòng TRƯỚC khi gọi API, vì mỗi lần lưu xong danh
+  // sách sẽ được vẽ lại (taiDanhMuc) khiến các "row" cũ không còn hợp lệ.
+  const yeuCau = rows.map(row => ({ id: row.dataset.id, body: layBody(row) })).filter(x => x.body !== null);
+  let ok = 0;
+  for (const { id, body } of yeuCau) {
+    try { await apiFetch(`${endpointPrefix}/${id}`, { method: "PUT", body: JSON.stringify(body) }); ok++; } catch (_) { /* bỏ qua, tiếp tục các mục còn lại */ }
+  }
+  showMsg("msg-danhmuc", `Đã lưu ${ok}/${rows.length} ${tenSoNhieu} đã chọn.`, ok === rows.length);
+  taiDanhMuc(); taiChoTrong();
+  if (countElId) capNhatSoLuongDaChon(listElId, countElId);
+}
+async function xoaDaChonChung(listElId, endpointPrefix, tenSoNhieu, countElId) {
+  const ids = dsHangDaChon(listElId).map(row => row.dataset.id);
+  if (!ids.length) return showMsg("msg-danhmuc", `Chưa chọn ${tenSoNhieu} nào.`, false);
+  if (!confirm(`Xoá ${ids.length} ${tenSoNhieu} đã chọn?`)) return;
+  let ok = 0;
+  for (const id of ids) {
+    try { await apiFetch(`${endpointPrefix}/${id}`, { method: "DELETE" }); ok++; } catch (_) { /* bỏ qua, tiếp tục các mục còn lại */ }
+  }
+  showMsg("msg-danhmuc", `Đã xoá ${ok}/${ids.length} ${tenSoNhieu} đã chọn.`, ok === ids.length);
+  taiDanhMuc(); taiChoTrong();
+  if (countElId) capNhatSoLuongDaChon(listElId, countElId);
 }
 
 async function taiViTriTrong() {
@@ -631,9 +719,24 @@ async function xeVao() {
 // trùng thông tin, nhân viên phải bấm chọn đúng 1 lượt trước khi xác nhận).
 let _luotXeRaDaChon = null;
 
+// Chuyển đổi hiển thị khối "thông tin chứng minh" khi khách chọn Mất vé.
+function doiTinhTrangVe() {
+  const matVe = document.querySelector('input[name="ve-xe-tinh-trang"]:checked')?.value === "mat-ve";
+  document.getElementById("mat-ve-block").classList.toggle("hidden", !matVe);
+}
+
 async function xeRa() {
   const hinhThucChon = document.getElementById("out-hinhthuc").value;
   const body = hinhThucChon ? { hinh_thuc_gui: hinhThucChon } : {};
+
+  const matVe = document.querySelector('input[name="ve-xe-tinh-trang"]:checked')?.value === "mat-ve";
+  if (matVe) {
+    const chungMinh = document.getElementById("out-chungminh").value.trim();
+    if (!chungMinh) return showMsg("msg-xera", "Khách báo mất vé: vui lòng nhập thông tin chứng minh là chủ xe trước khi xác nhận.", false);
+    body.mat_ve = true;
+    body.thong_tin_chung_minh = chungMinh;
+  }
+
   if (_luotXeRaDaChon) {
     body.luot_gui_xe_id = _luotXeRaDaChon;
   } else {
@@ -643,12 +746,16 @@ async function xeRa() {
   }
   try {
     const data = await apiFetch("/api/xe-ra", { method: "POST", body: JSON.stringify(body) });
-    showMsg("msg-xera", `Xe đã ra. Phí thu: ${Number(data.phi_thu).toLocaleString()} VNĐ`);
+    const ghiChuMatVe = data.mat_ve ? " (đã gồm phụ phí mất vé 10.000đ)" : "";
+    showMsg("msg-xera", `Xe đã ra. Phí thu: ${Number(data.phi_thu).toLocaleString()} VNĐ${ghiChuMatVe}`);
     document.getElementById("xera-preview").innerHTML = "";
     document.getElementById("out-bienso").value = "";
     document.getElementById("out-chuxe").value = "";
     document.getElementById("out-sdt").value = "";
     document.getElementById("out-hinhthuc").value = "";
+    document.getElementById("out-chungminh").value = "";
+    document.querySelector('input[name="ve-xe-tinh-trang"][value="co-ve"]').checked = true;
+    doiTinhTrangVe();
     _luotXeRaDaChon = null;
     taiChoTrong();
   } catch (e) { showMsg("msg-xera", e.message, false); }
@@ -759,7 +866,7 @@ async function traCuu() {
   const qs = params.toString();
   const data = await apiFetch("/api/tra-cuu" + (qs ? `?${qs}` : ""));
   document.getElementById("tra-cuu-view").innerHTML = `
-    <table><tr><th>Biển số</th><th>Chủ xe</th><th>SĐT</th><th>Loại xe</th><th>Khu vực</th><th>Vị trí</th><th>Thời gian gửi</th><th>Vào</th><th>Ra</th><th>Phí</th><th>TT</th></tr>
+    <table><tr><th>Biển số</th><th>Chủ xe</th><th>SĐT</th><th>Loại xe</th><th>Khu vực</th><th>Vị trí</th><th>Thời gian gửi</th><th>Vào</th><th>Ra</th><th>Phí</th><th>Vé</th><th>TT</th></tr>
     ${data.map(l => `<tr>
         <td>${escapeHtml(l.bien_so)}</td>
         <td>${escapeHtml(l.chu_xe) || "-"}</td>
@@ -771,8 +878,9 @@ async function traCuu() {
         <td>${l.thoi_gian_vao ?? ""}</td>
         <td>${l.thoi_gian_ra ?? "-"}</td>
         <td>${l.phi_thu != null ? Number(l.phi_thu).toLocaleString() : "-"}</td>
+        <td>${l.mat_ve ? `<span class="badge da_do" title="Đã thu phụ phí mất vé 10.000đ">Mất vé</span>` : "-"}</td>
         <td><span class="badge ${l.trang_thai === "dang_gui" ? "da_do" : "trong"}">${l.trang_thai === "dang_gui" ? "Đang gửi" : "Hoàn tất"}</span></td>
-      </tr>`).join("") || `<tr><td colspan="11"><i>Không tìm thấy lượt gửi xe phù hợp.</i></td></tr>`}
+      </tr>`).join("") || `<tr><td colspan="12"><i>Không tìm thấy lượt gửi xe phù hợp.</i></td></tr>`}
     </table>`;
 }
 

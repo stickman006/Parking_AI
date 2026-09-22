@@ -266,6 +266,24 @@ def _lay_hoac_tao_phuong_tien(db: Session, bien_so: str, loai_xe_id: Optional[in
                                chu_xe: Optional[str], so_dien_thoai: Optional[str]) -> models.PhuongTien:
     pt = db.query(models.PhuongTien).filter(models.PhuongTien.bien_so == bien_so).first()
     if pt is not None:
+        # Xe đã có trong hệ thống nhưng thông tin có thể đã thay đổi (đổi
+        # chủ xe, đổi SĐT, hoặc nhân viên từng nhập sai loại xe ở lần đăng
+        # ký đầu tiên) - cập nhật lại theo dữ liệu mới nhất mỗi lần ghi
+        # nhận xe vào, để tính phí và tra cứu luôn đúng thay vì giữ mãi
+        # thông tin cũ. Chỉ cập nhật khi có giá trị mới VÀ khác giá trị cũ.
+        thay_doi = False
+        if loai_xe_id is not None and loai_xe_id != pt.loai_xe_id:
+            pt.loai_xe_id = loai_xe_id
+            thay_doi = True
+        if chu_xe and chu_xe != pt.chu_xe:
+            pt.chu_xe = chu_xe
+            thay_doi = True
+        if so_dien_thoai and so_dien_thoai != pt.so_dien_thoai:
+            pt.so_dien_thoai = so_dien_thoai
+            thay_doi = True
+        if thay_doi:
+            db.commit()
+            db.refresh(pt)
         return pt
     if loai_xe_id is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Xe chưa từng đăng ký - cần cung cấp loai_xe_id")
@@ -342,10 +360,14 @@ def ghi_nhan_xe_ra(db: Session, du_lieu: schemas.XeRaRequest) -> models.LuotGuiX
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Chưa cấu hình bảng giá cho loại xe và thời gian gửi đã chọn")
 
     phi = fee.tinh_phi(luot.thoi_gian_vao, thoi_gian_ra, hinh_thuc, gia_row.don_gia)
+    if du_lieu.mat_ve:
+        phi += fee.PHI_PHU_MAT_VE
 
     luot.thoi_gian_ra = thoi_gian_ra
     luot.phi_thu = phi
     luot.hinh_thuc_gui = hinh_thuc
+    luot.mat_ve = du_lieu.mat_ve
+    luot.thong_tin_chung_minh = du_lieu.thong_tin_chung_minh
     luot.trang_thai = models.TrangThaiLuot.hoan_tat
 
     vi_tri = db.get(models.ViTriDo, luot.vi_tri_id)
@@ -407,6 +429,7 @@ def tra_cuu_luot_xe(db: Session, tham_so: schemas.TraCuuLuotXeParams) -> list[di
             "phi_thu": luot.phi_thu,
             "trang_thai": luot.trang_thai,
             "hinh_thuc_gui": luot.hinh_thuc_gui,
+            "mat_ve": luot.mat_ve,
         }
         for luot, pt, vt, kv, lx in rows
     ]

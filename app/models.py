@@ -116,6 +116,10 @@ class LuotGuiXe(Base):
     # thể xác nhận/đổi lại khi xe ra) - quyết định đơn giá áp dụng để tính
     # phí chính xác, thay vì suy đoán tự động theo giờ đồng hồ.
     hinh_thuc_gui = Column(Enum(KhungGio), nullable=True)
+    # Trường hợp mất vé gửi xe: yêu cầu người nhận xe cung cấp thông tin
+    # chứng minh là chủ xe (CCCD, đặc điểm xe...) và thu thêm phụ phí.
+    mat_ve = Column(Boolean, nullable=False, default=False)
+    thong_tin_chung_minh = Column(String(255), nullable=True)
 
 
 # ---------------------------------------------------------------------------

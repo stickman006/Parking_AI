@@ -148,8 +148,17 @@ body.hint-ai-active .nav-hint-pointer{display:inline-flex}
 .xera-info-pick>div:last-child{border-right:0}
 @media(max-width:680px){.xera-info-pick{grid-template-columns:1fr}.xera-info-pick>div{border-right:0;border-bottom:1px dashed var(--line)}}
 
-/* ----- Tạo hàng loạt vị trí theo chữ cái đầu ----- */
+/* ----- Có vé / Mất vé khi ghi nhận xe ra ----- */
+.ve-xe-block{margin-top:14px;padding:14px;background:var(--pri-soft);border:1px solid var(--line);border-radius:14px}
+.ve-xe-title{font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--pri-dark);margin-bottom:9px}
+.ve-xe-options{display:flex;flex-wrap:wrap;gap:16px}
+.ve-xe-radio{display:flex;align-items:center;gap:7px;font-size:14px;cursor:pointer}
+.ve-xe-radio input{width:17px;height:17px;min-height:0;accent-color:var(--pri-dark);cursor:pointer}
+.ve-xe-phuphi{color:var(--bad);font-weight:700;font-size:12.5px}
+#mat-ve-block{margin-top:12px;padding-top:12px;border-top:1px dashed rgba(217,45,115,.2)}
 .vitri-hangloat{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.vitri-hangloat-buttons{flex-wrap:wrap;margin-top:8px}
+.vitri-hangloat-buttons .btn{flex:1 1 auto;min-width:56px;padding:8px 6px;font-size:12.5px}
 
 /* ----- Biểu đồ cột % thời gian gửi xe (thống kê), có animation khi load ----- */
 .thongke-chart-wrap{margin-top:18px;padding-top:16px;border-top:1px dashed var(--line)}
@@ -204,9 +213,16 @@ body.hint-ai-active .nav-hint-pointer{display:inline-flex}
 .manage-row-actions .btn{min-height:38px;padding:7px 12px;font-size:12px}
 button.btn.danger{color:var(--bad);background:#fff;border:1px solid #f4cad5;box-shadow:none}
 button.btn.danger:hover{background:#fff0f3}
+.mr-check{width:18px;height:18px;min-height:0;accent-color:var(--pri-dark);cursor:pointer}
+/* ----- Chọn nhiều mục trong Danh mục vận hành để sửa/xoá hàng loạt ----- */
 .manage-block{margin-top:20px;padding-top:16px;border-top:1px dashed var(--line)}
-.manage-block-title{margin:0 0 4px;color:var(--pri-dark);font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
-@media(max-width:680px){.manage-row{grid-template-columns:1fr}}
+.manage-block-title{margin:0 0 4px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px;color:var(--pri-dark);font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.manage-bulk-actions{display:flex;align-items:center;gap:10px;text-transform:none;letter-spacing:normal;font-weight:600}
+.chon-tat-ca{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted);cursor:pointer}
+.chon-tat-ca input{width:16px;height:16px;min-height:0;accent-color:var(--pri-dark);cursor:pointer}
+.manage-bulk-actions .btn{padding:6px 11px;font-size:12px;min-height:32px}
+.manage-bulk-count{font-size:12px;color:var(--pri-dark);font-weight:800;min-width:64px}
+@media(max-width:680px){.manage-row{grid-template-columns:1fr}.mr-check{justify-self:start}}
 
 /* ----- Badge "trống" nhấp nháy nhẹ để thu hút chú ý ----- */
 @keyframes badge-pulse{0%,100%{box-shadow:0 0 0 0 rgba(22,132,91,.28)}50%{box-shadow:0 0 0 5px rgba(22,132,91,0)}}

@@ -39,6 +39,10 @@ HINH_THUC_THEO_THANG = {KhungGio.thang, KhungGio.qua_dem_thang}
 
 SO_NGAY_MOI_CHU_KY = 30
 
+# Phụ phí khi khách báo mất vé gửi xe (bắt buộc cung cấp thông tin chứng
+# minh là chủ xe trước khi cho xe ra - xem schemas.XeRaRequest).
+PHI_PHU_MAT_VE = 10000
+
 
 def tinh_phi(thoi_gian_vao: datetime, thoi_gian_ra: datetime,
              hinh_thuc_gui: KhungGio, don_gia: float) -> float:

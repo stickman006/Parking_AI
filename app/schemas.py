@@ -2,7 +2,7 @@ import re
 from datetime import datetime
 from typing import Optional, List
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from app.models import VaiTro, TrangThaiViTri, TrangThaiLuot, KhungGio
 
@@ -198,6 +198,16 @@ class XeRaRequest(BaseModel):
     # Cho phép xác nhận/đổi lại hình thức gửi xe ngay tại thời điểm xe ra
     # (nếu để trống, hệ thống dùng hình thức đã chọn lúc xe vào).
     hinh_thuc_gui: Optional[KhungGio] = None
+    # Trường hợp mất vé: bắt buộc phải có thông tin chứng minh là chủ xe
+    # (CCCD/hộ chiếu, đặc điểm nhận dạng xe...) và sẽ bị thu thêm phụ phí.
+    mat_ve: bool = False
+    thong_tin_chung_minh: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _kt_mat_ve(self):
+        if self.mat_ve and not (self.thong_tin_chung_minh and self.thong_tin_chung_minh.strip()):
+            raise ValueError("Mất vé: cần nhập thông tin chứng minh là chủ xe trước khi cho xe ra")
+        return self
 
 
 class LuotGuiXeOut(BaseModel):
@@ -210,6 +220,7 @@ class LuotGuiXeOut(BaseModel):
     phi_thu: Optional[float] = None
     trang_thai: TrangThaiLuot
     hinh_thuc_gui: Optional[KhungGio] = None
+    mat_ve: bool = False
 
 
 class TraCuuLuotXeParams(BaseModel):
@@ -236,6 +247,7 @@ class TraCuuKetQuaItem(BaseModel):
     phi_thu: Optional[float] = None
     trang_thai: TrangThaiLuot
     hinh_thuc_gui: Optional[KhungGio] = None
+    mat_ve: bool = False
 
 
 # ---------- Thống kê ----------
