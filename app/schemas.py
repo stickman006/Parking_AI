@@ -50,6 +50,14 @@ class LoginRequest(BaseModel):
     mat_khau: str
 
 
+class GoogleLoginRequest(BaseModel):
+    id_token: str  # ID token (JWT) do Google Identity Services trả về ở phía trình duyệt
+
+
+class AuthConfigOut(BaseModel):
+    google_client_id: str  # rỗng nếu server chưa cấu hình GOOGLE_CLIENT_ID
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

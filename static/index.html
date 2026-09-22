@@ -7,6 +7,7 @@
   <title>Hệ thống quản lý bãi đỗ xe AI</title>
   <link rel="stylesheet" href="theme-base.css">
   <link rel="stylesheet" href="theme.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div id="login-box">
@@ -23,6 +24,8 @@
     <input id="li-pass" type="password" autocomplete="current-password" aria-label="Mật khẩu" placeholder="Mật khẩu">
     <button class="btn" onclick="dangNhap()">Đăng nhập</button>
     <div id="li-msg"></div>
+    <div id="google-signin-divider" class="auth-divider hidden"><span>hoặc</span></div>
+    <div id="google-signin-btn" class="google-signin-slot"></div>
   </div>
 
   <div id="register-panel" class="auth-panel hidden">

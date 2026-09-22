@@ -49,8 +49,11 @@ class NguoiDung(Base):
     id = Column(Integer, primary_key=True, index=True)
     ho_ten = Column(String(150), nullable=False)
     tai_khoan = Column(String(100), unique=True, nullable=False, index=True)
-    mat_khau_hash = Column(String(255), nullable=False)
+    mat_khau_hash = Column(String(255), nullable=True)  # NULL với tài khoản chỉ đăng nhập bằng Google
     vai_tro = Column(Enum(VaiTro), nullable=False, default=VaiTro.nhan_vien)
+    # ID định danh Google (trường "sub" trong ID token) - để lần đăng nhập
+    # Google sau khớp đúng tài khoản, không phụ thuộc vào email có đổi hay không.
+    google_sub = Column(String(64), unique=True, nullable=True, index=True)
 
 
 class KhuVuc(Base):

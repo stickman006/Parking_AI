@@ -71,6 +71,46 @@ function dangXuat() {
   location.reload();
 }
 
+// ---------- Đăng nhập bằng Google ----------
+// Google Identity Services (script tải async trong <head>) có thể chưa kịp
+// gắn window.google lúc app.js chạy xong - chờ tối đa ~5s trước khi bỏ qua.
+function _choGoogleGsiSanSang(soLanConLai = 50) {
+  return new Promise(resolve => {
+    const kiemTra = n => {
+      if (window.google && window.google.accounts && window.google.accounts.id) return resolve(true);
+      if (n <= 0) return resolve(false);
+      setTimeout(() => kiemTra(n - 1), 100);
+    };
+    kiemTra(soLanConLai);
+  });
+}
+
+async function taiCauHinhDangNhap() {
+  try {
+    const cfg = await apiFetch("/api/auth/config");
+    if (!cfg.google_client_id) return; // server chưa cấu hình -> không hiện nút Google
+    if (!(await _choGoogleGsiSanSang())) return;
+    google.accounts.id.initialize({ client_id: cfg.google_client_id, callback: xuLyDangNhapGoogle });
+    const slot = document.getElementById("google-signin-btn");
+    if (!slot) return;
+    google.accounts.id.renderButton(slot, { theme: "outline", size: "large", width: 280, locale: "vi" });
+    document.getElementById("google-signin-divider")?.classList.remove("hidden");
+  } catch (_) { /* không có mạng hoặc lỗi tạm thời -> lặng lẽ bỏ qua, vẫn đăng nhập thường được */ }
+}
+
+async function xuLyDangNhapGoogle(response) {
+  try {
+    const data = await apiFetch("/api/auth/google", { method: "POST", body: JSON.stringify({ id_token: response.credential }) });
+    TOKEN = data.access_token; VAI_TRO = data.vai_tro; HO_TEN = data.ho_ten;
+    localStorage.setItem("token", TOKEN);
+    localStorage.setItem("vai_tro", VAI_TRO);
+    localStorage.setItem("ho_ten", HO_TEN);
+    initApp();
+  } catch (e) {
+    showMsg("li-msg", e.message, false);
+  }
+}
+
 function showLoginPanel(panelId) {
   document.querySelectorAll(".auth-panel").forEach(p => p.classList.add("hidden"));
   document.getElementById(panelId).classList.remove("hidden");
@@ -997,3 +1037,4 @@ async function taiLichSu() {
 
 // ---------- Khởi động ----------
 if (TOKEN) initApp();
+taiCauHinhDangNhap();

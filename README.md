@@ -58,7 +58,34 @@ Groq là lựa chọn AI Engine **miễn phí** khuyến nghị: tạo tài kho�
 https://console.groq.com, vào mục "API Keys" để lấy `GROQ_API_KEY` (không
 cần thẻ thanh toán ở gói free tier).
 
-## 5. Chạy kiểm thử (mục 3.4 của báo cáo)
+## 5. Đăng nhập bằng Google (tuỳ chọn)
+
+Mặc định hệ thống chỉ có đăng nhập tài khoản/mật khẩu. Để bật thêm nút
+"Đăng nhập bằng Google":
+
+1. Vào https://console.cloud.google.com/apis/credentials → tạo project
+   (nếu chưa có) → **Create Credentials → OAuth client ID** → chọn loại
+   **Web application**.
+2. Ở mục **Authorized JavaScript origins**, thêm đúng domain sẽ chạy
+   trang web (VD: `http://127.0.0.1:8000` lúc chạy cục bộ, và
+   `https://ten-app.onrender.com` sau khi deploy).
+3. Copy **Client ID** (dạng `xxxxx.apps.googleusercontent.com`), đặt vào
+   biến môi trường trước khi chạy:
+   ```bash
+   export GOOGLE_CLIENT_ID="xxxxx.apps.googleusercontent.com"
+   ```
+4. Khởi động lại server. Nút "Đăng nhập bằng Google" sẽ tự hiện ở màn hình
+   đăng nhập (nếu để trống biến này, nút không hiện - tài khoản/mật khẩu
+   vẫn dùng bình thường).
+
+Người dùng đăng nhập Google **lần đầu tiên** sẽ tự được tạo tài khoản với
+vai trò **Nhân viên**. Muốn cấp quyền **Quản lý** cho một email cụ thể,
+Quản lý hiện có vào mục "Tạo quản lý / nhân viên" tạo trước 1 tài khoản với
+**Tài khoản = đúng email Gmail đó**, vai trò Quản lý (mật khẩu đặt tuỳ ý,
+không cần nhớ) - lần đăng nhập Google đầu tiên bằng email đó sẽ tự liên
+kết vào đúng tài khoản Quản lý này thay vì tạo tài khoản Nhân viên mới.
+
+## 6. Chạy kiểm thử (mục 3.4 của báo cáo)
 
 ```bash
 pytest tests/ -v
@@ -69,7 +96,7 @@ Bao gồm:
 - `test_nghiep_vu.py`: vào/ra, hết chỗ trống, validate biển số/SĐT, cập nhật trạng thái chỗ trống (3.4.1, 3.4.2)
 - `test_ai.py`: xử lý dữ liệu rỗng, tính grounded (không bịa số liệu) của 3 chức năng AI (3.4.3)
 
-## 6. Cấu trúc thư mục
+## 7. Cấu trúc thư mục
 
 ```
 app/
@@ -89,7 +116,7 @@ static/           - giao diện web (index.html + app.js) cho các nhóm màn h�
 tests/            - bộ kiểm thử pytest (3.4)
 ```
 
-## 7. Đổi hệ quản trị CSDL sang PostgreSQL/Supabase (mục 1.2.3)
+## 8. Đổi hệ quản trị CSDL sang PostgreSQL/Supabase (mục 1.2.3)
 
 Đặt biến môi trường `DATABASE_URL` trước khi chạy, ví dụ:
 
@@ -104,9 +131,9 @@ dữ liệu mẫu trên CSDL mới.
 
 ---
 
-## 8. Triển khai lên GitHub + Render + Supabase (miễn phí)
+## 9. Triển khai lên GitHub + Render + Supabase (miễn phí)
 
-### 8.1. Đẩy code lên GitHub
+### 9.1. Đẩy code lên GitHub
 
 ```bash
 cd parking_ai_system
@@ -121,7 +148,7 @@ git push -u origin main
 (Tạo repo rỗng trên https://github.com/new trước, KHÔNG tick "Add a
 README" để tránh xung đột khi push.)
 
-### 8.2. Tạo CSDL trên Supabase (miễn phí)
+### 9.2. Tạo CSDL trên Supabase (miễn phí)
 
 1. Tạo project mới tại https://supabase.com (gói Free).
 2. Vào **Project Settings → Database → Connection string**, chọn tab
@@ -130,7 +157,7 @@ README" để tránh xung đột khi push.)
 3. Thay `[YOUR-PASSWORD]` bằng mật khẩu database bạn đã đặt lúc tạo project.
    Đây chính là giá trị sẽ điền vào biến môi trường `DATABASE_URL` ở bước dưới.
 
-### 8.3. Triển khai lên Render (miễn phí)
+### 9.3. Triển khai lên Render (miễn phí)
 
 1. Đăng nhập https://render.com bằng tài khoản GitHub.
 2. **New + → Web Service**, chọn repo vừa đẩy lên GitHub.
@@ -139,9 +166,13 @@ README" để tránh xung đột khi push.)
    - Build Command: `pip install -r requirements.txt`
    - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1`
 4. Ở mục **Environment**, thêm các biến:
-   - `DATABASE_URL` = chuỗi kết nối Supabase ở bước 8.2
+   - `DATABASE_URL` = chuỗi kết nối Supabase ở bước 9.2
    - `GROQ_API_KEY` = API key miễn phí lấy ở console.groq.com (tuỳ chọn - bỏ
      qua nếu muốn dùng bộ AI nội bộ miễn phí có sẵn, không cần key)
+   - `GOOGLE_CLIENT_ID` = Client ID lấy ở mục 5 (tuỳ chọn - bỏ qua nếu
+     không cần nút đăng nhập Google). Nhớ vào lại Google Cloud Console
+     thêm `https://ten-app.onrender.com` vào **Authorized JavaScript
+     origins** sau khi có URL thật của Render.
 5. Bấm **Create Web Service**. Sau khi build xong, Render cấp 1 URL dạng
    `https://ten-app.onrender.com` - đây chính là link truy cập hệ thống.
 6. Chạy tạo dữ liệu mẫu trên CSDL Supabase (chỉ cần 1 lần, chạy từ máy cá
