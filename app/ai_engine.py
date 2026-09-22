@@ -98,7 +98,7 @@ def _goi_ai_engine_that(system_prompt: str, user_prompt: str) -> Optional[str]:
                 "https://api.groq.com/openai/v1/chat/completions",
                 headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
                 json={
-                    "model": os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+                    "model": "llama-3.3-70b-versatile",
                     "messages": [
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt},
