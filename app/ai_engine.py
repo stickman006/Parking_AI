@@ -94,7 +94,7 @@ def _goi_ai_engine_that(system_prompt: str, user_prompt: str) -> Optional[str]:
 
         gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GROQ_API_KEY")
         if gemini_key:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={gemini_key}"
             payload = {
                 "contents": [
                     {
