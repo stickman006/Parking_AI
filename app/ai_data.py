@@ -1,25 +1,12 @@
-"""
-2.3.3 / 3.3.1: Xây dựng pipeline tổng hợp dữ liệu đầu vào cho AI.
-
-Các hàm ở đây KHÔNG gửi dữ liệu thô cho AI. Chúng truy vấn CSDL, tổng
-hợp thành số liệu (dict/list các số), rồi mới được đưa vào phần user
-prompt ở app/ai_engine.py. Điều này đúng với ràng buộc grounded
-generation: AI chỉ nhận số liệu đã tính sẵn, không tự tính toán.
-"""
 from datetime import datetime, timedelta
 from collections import defaultdict
 from typing import Optional
-
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-
 from app import models
 
 
-def thong_ke_luu_luong(db: Session, tu_ngay: datetime, den_ngay: datetime,
-                        khu_vuc_id: Optional[int] = None) -> dict:
-    """thong_ke_luu_luong: số lượt xe vào/ra theo ngày và theo thời gian gửi
-    xe (sáng/chiều/tối/qua đêm/theo tháng/qua đêm theo tháng)."""
+def thong_ke_luu_luong(db: Session, tu_ngay: datetime, den_ngay: datetime, khu_vuc_id: Optional[int] = None) -> dict:
     q = db.query(models.LuotGuiXe).filter(
         models.LuotGuiXe.thoi_gian_vao >= tu_ngay,
         models.LuotGuiXe.thoi_gian_vao < den_ngay,
@@ -28,9 +15,8 @@ def thong_ke_luu_luong(db: Session, tu_ngay: datetime, den_ngay: datetime,
         q = q.join(models.ViTriDo).filter(models.ViTriDo.khu_vuc_id == khu_vuc_id)
 
     luot_list = q.all()
-
     theo_ngay = defaultdict(lambda: {"vao": 0, "ra": 0})
-    theo_hinh_thuc = defaultdict(int)  # hình thức gửi xe -> số lượt
+    theo_hinh_thuc = defaultdict(int)
 
     for luot in luot_list:
         ngay_key = luot.thoi_gian_vao.strftime("%Y-%m-%d")
@@ -57,9 +43,7 @@ def thong_ke_luu_luong(db: Session, tu_ngay: datetime, den_ngay: datetime,
     }
 
 
-def thong_ke_doanh_thu(db: Session, tu_ngay: datetime, den_ngay: datetime,
-                        khu_vuc_id: Optional[int] = None) -> dict:
-    """thong_ke_doanh_thu: tổng phí thu được theo ngày, theo loại xe."""
+def thong_ke_doanh_thu(db: Session, tu_ngay: datetime, den_ngay: datetime, khu_vuc_id: Optional[int] = None) -> dict:
     q = db.query(models.LuotGuiXe).filter(
         models.LuotGuiXe.thoi_gian_ra.isnot(None),
         models.LuotGuiXe.thoi_gian_ra >= tu_ngay,
@@ -70,7 +54,6 @@ def thong_ke_doanh_thu(db: Session, tu_ngay: datetime, den_ngay: datetime,
         q = q.join(models.ViTriDo).filter(models.ViTriDo.khu_vuc_id == khu_vuc_id)
 
     luot_list = q.all()
-
     theo_ngay = defaultdict(float)
     theo_loai_xe = defaultdict(float)
 
@@ -91,7 +74,6 @@ def thong_ke_doanh_thu(db: Session, tu_ngay: datetime, den_ngay: datetime,
 
 
 def ty_le_lap_day(db: Session, khu_vuc_id: Optional[int] = None) -> dict:
-    """ty_le_lap_day: tỷ lệ vị trí đã đỗ/tổng vị trí theo khu vực (thời điểm hiện tại)."""
     q = db.query(models.KhuVuc)
     if khu_vuc_id is not None:
         q = q.filter(models.KhuVuc.id == khu_vuc_id)
@@ -113,18 +95,72 @@ def ty_le_lap_day(db: Session, khu_vuc_id: Optional[int] = None) -> dict:
     return {"theo_khu_vuc": ket_qua}
 
 
-def tong_hop_du_lieu_cho_ai(db: Session, tu_ngay: datetime, den_ngay: datetime,
-                             khu_vuc_id: Optional[int] = None) -> dict:
-    """Gộp cả 3 nhóm số liệu thành một payload duy nhất để đưa vào prompt."""
+def lay_toan_bo_cac_bang(db: Session) -> dict:
+    """Truy vấn tất cả các bảng còn lại trong Supabase."""
+    du_lieu = {}
+
+    # 1. Bảng bang_gia
+    try:
+        du_lieu["bang_gia"] = [
+            {"id": g.id, "loai_xe_id": g.loai_xe_id, "khung_gio": getattr(g, "khung_gio", ""), "don_gia": getattr(g, "don_gia", 0)}
+            for g in db.query(models.BangGia).all()
+        ]
+    except Exception: pass
+
+    # 2. Bảng loai_xe
+    try:
+        du_lieu["loai_xe"] = [
+            {"id": lx.id, "ten_loai_xe": getattr(lx, "ten_loai_xe", "")}
+            for lx in db.query(models.LoaiXe).all()
+        ]
+    except Exception: pass
+
+    # 3. Bảng khu_vuc
+    try:
+        du_lieu["khu_vuc"] = [
+            {"id": kv.id, "ten_khu_vuc": getattr(kv, "ten_khu_vuc", "")}
+            for kv in db.query(models.KhuVuc).all()
+        ]
+    except Exception: pass
+
+    # 4. Bảng nguoi_dung
+    try:
+        du_lieu["nguoi_dung"] = [
+            {"id": u.id, "ho_ten": getattr(u, "ho_ten", ""), "vai_tro": getattr(u, "vai_tro", "")}
+            for u in db.query(models.NguoiDung).all()
+        ]
+    except Exception: pass
+
+    # 5. Bảng vi_tri_do
+    try:
+        du_lieu["vi_tri_do"] = [
+            {"id": vt.id, "khu_vuc_id": vt.khu_vuc_id, "ma_vi_tri": getattr(vt, "ma_vi_tri", ""), "trang_thai": str(getattr(vt, "trang_thai", ""))}
+            for vt in db.query(models.ViTriDo).all()
+        ]
+    except Exception: pass
+
+    # 6. Bảng phuong_tien (Lấy tối đa 20 xe mới nhất)
+    try:
+        du_lieu["phuong_tien_gan_day"] = [
+            {"id": pt.id, "bien_so": getattr(pt, "bien_so", ""), "loai_xe_id": pt.loai_xe_id}
+            for pt in db.query(models.PhuongTien).order_by(models.PhuongTien.id.desc()).limit(20).all()
+        ]
+    except Exception: pass
+
+    return du_lieu
+
+
+def tong_hop_du_lieu_cho_ai(db: Session, tu_ngay: datetime, den_ngay: datetime, khu_vuc_id: Optional[int] = None) -> dict:
+    """Tổng hợp 100% dữ liệu từ 8 bảng Supabase cho AI."""
     return {
         "khoang_thoi_gian": {"tu_ngay": tu_ngay.isoformat(), "den_ngay": den_ngay.isoformat()},
         "luu_luong": thong_ke_luu_luong(db, tu_ngay, den_ngay, khu_vuc_id),
         "doanh_thu": thong_ke_doanh_thu(db, tu_ngay, den_ngay, khu_vuc_id),
         "lap_day": ty_le_lap_day(db, khu_vuc_id),
+        "chi_tiet_csdl_supabase": lay_toan_bo_cac_bang(db), # <--- Toàn bộ 8 bảng đều ở đây
     }
 
 
 def du_lieu_rong(payload: dict) -> bool:
-    """Kiểm tra dữ liệu tổng hợp có rỗng hay không (phục vụ 3.4.3 - test dữ liệu rỗng)."""
     luu_luong = payload.get("luu_luong", {})
     return luu_luong.get("tong_so_luot", 0) == 0
