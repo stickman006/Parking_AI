@@ -93,23 +93,21 @@ def _goi_ai_engine_that(system_prompt: str, user_prompt: str) -> Optional[str]:
             data = resp.json()
             return data["choices"][0]["message"]["content"]
 
-        if groq_key:
-            resp = requests.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
-                json={
-                    "model": "llama-3.3-70b-versatile",
-                    "messages": [
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt},
-                    ],
-                    "max_tokens": 700,
-                },
-                timeout=15,
-            )
+        gemini_key = os.getenv("GEMINI_API_KEY") or os.getenv("GROQ_API_KEY")
+        if gemini_key:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={gemini_key}"
+            payload = {
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [{"text": f"{system_prompt}\n\nYêu cầu: {user_prompt}"}]
+                    }
+                ]
+            }
+            resp = requests.post(url, json=payload, timeout=15)
             resp.raise_for_status()
             data = resp.json()
-            return data["choices"][0]["message"]["content"]
+            return data["candidates"][0]["content"]["parts"][0]["text"]
 
     except requests.RequestException as exc:
         raise AIEngineError(f"Lỗi khi gọi AI Engine: {exc}") from exc
