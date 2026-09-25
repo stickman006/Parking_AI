@@ -58,32 +58,27 @@ Groq là lựa chọn AI Engine **miễn phí** khuyến nghị: tạo tài kho�
 https://console.groq.com, vào mục "API Keys" để lấy `GROQ_API_KEY` (không
 cần thẻ thanh toán ở gói free tier).
 
-## 5. Đăng nhập bằng Google (tuỳ chọn)
+## 5. Tài khoản đăng nhập
 
-Mặc định hệ thống chỉ có đăng nhập tài khoản/mật khẩu. Để bật thêm nút
-"Đăng nhập bằng Google":
+Hệ thống **không có đăng ký công khai** - màn hình đăng nhập chỉ có duy
+nhất ô tài khoản/mật khẩu. Việc tạo tài khoản mới (Quản lý hoặc Nhân
+viên) chỉ thực hiện được từ **bên trong** hệ thống, ở mục "Tạo quản lý /
+nhân viên" (dành riêng cho người đăng nhập với quyền Quản lý).
 
-1. Vào https://console.cloud.google.com/apis/credentials → tạo project
-   (nếu chưa có) → **Create Credentials → OAuth client ID** → chọn loại
-   **Web application**.
-2. Ở mục **Authorized JavaScript origins**, thêm đúng domain sẽ chạy
-   trang web (VD: `http://127.0.0.1:8000` lúc chạy cục bộ, và
-   `https://ten-app.onrender.com` sau khi deploy).
-3. Copy **Client ID** (dạng `xxxxx.apps.googleusercontent.com`), đặt vào
-   biến môi trường trước khi chạy:
-   ```bash
-   export GOOGLE_CLIENT_ID="xxxxx.apps.googleusercontent.com"
-   ```
-4. Khởi động lại server. Nút "Đăng nhập bằng Google" sẽ tự hiện ở màn hình
-   đăng nhập (nếu để trống biến này, nút không hiện - tài khoản/mật khẩu
-   vẫn dùng bình thường).
+Để luôn đăng nhập được lần đầu tiên, hệ thống **tự tạo sẵn 1 tài khoản
+Quản lý mặc định** ngay khi khởi động lần đầu (nếu CSDL chưa có người
+dùng nào):
+- Tài khoản: `quanly`
+- Mật khẩu: `123456`
 
-Người dùng đăng nhập Google **lần đầu tiên** sẽ tự được tạo tài khoản với
-vai trò **Nhân viên**. Muốn cấp quyền **Quản lý** cho một email cụ thể,
-Quản lý hiện có vào mục "Tạo quản lý / nhân viên" tạo trước 1 tài khoản với
-**Tài khoản = đúng email Gmail đó**, vai trò Quản lý (mật khẩu đặt tuỳ ý,
-không cần nhớ) - lần đăng nhập Google đầu tiên bằng email đó sẽ tự liên
-kết vào đúng tài khoản Quản lý này thay vì tạo tài khoản Nhân viên mới.
+Có thể đổi thông tin tài khoản mặc định này bằng biến môi trường trước
+khi chạy lần đầu:
+```bash
+export ADMIN_USERNAME="quanly"
+export ADMIN_PASSWORD="mat-khau-cua-ban"
+```
+**Nên đổi mật khẩu** (qua mục quản lý tài khoản) ngay sau lần đăng nhập
+đầu tiên, nhất là khi đã deploy công khai lên Internet.
 
 ## 6. Chạy kiểm thử (mục 3.4 của báo cáo)
 
@@ -110,6 +105,7 @@ app/
   ai_data.py      - pipeline tổng hợp dữ liệu cho AI (thong_ke_luu_luong theo
                     hình thức gửi xe, thong_ke_doanh_thu, ty_le_lap_day)
   ai_engine.py    - prompt engineering + gọi AI Engine (Anthropic/OpenAI/Groq) hoặc bộ sinh nội bộ
+  excel_report.py - xuất báo cáo lưu lượng/doanh thu/chi tiết lượt gửi xe ra file .xlsx (QL-08)
   seed.py         - tạo dữ liệu mẫu
   routers/        - các API endpoint (auth, danh_muc, nghiep_vu, thong_ke, ai)
 static/           - giao diện web (index.html + app.js) cho các nhóm màn hình (2.5)
@@ -169,10 +165,9 @@ README" để tránh xung đột khi push.)
    - `DATABASE_URL` = chuỗi kết nối Supabase ở bước 9.2
    - `GROQ_API_KEY` = API key miễn phí lấy ở console.groq.com (tuỳ chọn - bỏ
      qua nếu muốn dùng bộ AI nội bộ miễn phí có sẵn, không cần key)
-   - `GOOGLE_CLIENT_ID` = Client ID lấy ở mục 5 (tuỳ chọn - bỏ qua nếu
-     không cần nút đăng nhập Google). Nhớ vào lại Google Cloud Console
-     thêm `https://ten-app.onrender.com` vào **Authorized JavaScript
-     origins** sau khi có URL thật của Render.
+   - `ADMIN_USERNAME` / `ADMIN_PASSWORD` = tài khoản Quản lý mặc định (tuỳ
+     chọn - không đặt thì mặc định là `quanly` / `123456`, nên đổi khi
+     deploy công khai)
 5. Bấm **Create Web Service**. Sau khi build xong, Render cấp 1 URL dạng
    `https://ten-app.onrender.com` - đây chính là link truy cập hệ thống.
 6. Chạy tạo dữ liệu mẫu trên CSDL Supabase (chỉ cần 1 lần, chạy từ máy cá

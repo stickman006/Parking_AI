@@ -71,70 +71,31 @@ function dangXuat() {
   location.reload();
 }
 
-// ---------- Đăng nhập bằng Google ----------
-// Google Identity Services (script tải async trong <head>) có thể chưa kịp
-// gắn window.google lúc app.js chạy xong - chờ tối đa ~5s trước khi bỏ qua.
-function _choGoogleGsiSanSang(soLanConLai = 50) {
-  return new Promise(resolve => {
-    const kiemTra = n => {
-      if (window.google && window.google.accounts && window.google.accounts.id) return resolve(true);
-      if (n <= 0) return resolve(false);
-      setTimeout(() => kiemTra(n - 1), 100);
-    };
-    kiemTra(soLanConLai);
+// Đồng hồ thời gian thực trên header - lấy đúng giờ thiết bị người dùng
+// (không phụ thuộc múi giờ server), cập nhật mỗi giây.
+function capNhatDongHoHeThong() {
+  const el = document.getElementById("dong-ho-he-thong");
+  if (!el) return;
+  el.textContent = new Date().toLocaleString("vi-VN", {
+    weekday: "short", day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
   });
 }
+setInterval(capNhatDongHoHeThong, 1000);
+capNhatDongHoHeThong();
 
-async function taiCauHinhDangNhap() {
-  try {
-    const cfg = await apiFetch("/api/auth/config");
-    if (!cfg.google_client_id) return; // server chưa cấu hình -> không hiện nút Google
-    if (!(await _choGoogleGsiSanSang())) return;
-    google.accounts.id.initialize({ client_id: cfg.google_client_id, callback: xuLyDangNhapGoogle });
-    const slot = document.getElementById("google-signin-btn");
-    if (!slot) return;
-    google.accounts.id.renderButton(slot, { theme: "outline", size: "large", width: 280, locale: "vi" });
-    document.getElementById("google-signin-divider")?.classList.remove("hidden");
-  } catch (_) { /* không có mạng hoặc lỗi tạm thời -> lặng lẽ bỏ qua, vẫn đăng nhập thường được */ }
-}
-
-async function xuLyDangNhapGoogle(response) {
-  try {
-    const data = await apiFetch("/api/auth/google", { method: "POST", body: JSON.stringify({ id_token: response.credential }) });
-    TOKEN = data.access_token; VAI_TRO = data.vai_tro; HO_TEN = data.ho_ten;
-    localStorage.setItem("token", TOKEN);
-    localStorage.setItem("vai_tro", VAI_TRO);
-    localStorage.setItem("ho_ten", HO_TEN);
-    initApp();
-  } catch (e) {
-    showMsg("li-msg", e.message, false);
-  }
-}
-
-function showLoginPanel(panelId) {
-  document.querySelectorAll(".auth-panel").forEach(p => p.classList.add("hidden"));
-  document.getElementById(panelId).classList.remove("hidden");
-  document.querySelectorAll(".login-tab").forEach(b => b.classList.remove("active"));
-  document.getElementById(panelId === "login-panel" ? "login-tab-btn" : "register-tab-btn").classList.add("active");
-}
-
-async function dangKyTaiKhoan(mode = "register") {
-  const prefix = mode === "register" ? "reg" : "acc";
-  const ho_ten = document.getElementById(`${prefix}-name`).value.trim();
-  const tai_khoan = document.getElementById(`${prefix}-user`).value.trim();
-  const mat_khau = document.getElementById(`${prefix}-pass`).value;
-  const vai_tro = document.getElementById(`${prefix}-role`).value;
-  const pass2 = mode === "register" ? document.getElementById("reg-pass2").value : null;
-  const msgId = mode === "register" ? "reg-msg" : "msg-taikhoan";
-  if (!ho_ten || !tai_khoan || !mat_khau) return showMsg(msgId, "Vui lòng nhập đủ thông tin.", false);
-  if (mode === "register" && mat_khau !== pass2) return showMsg(msgId, "Mật khẩu nhập lại không khớp.", false);
+async function dangKyTaiKhoan() {
+  const ho_ten = document.getElementById("acc-name").value.trim();
+  const tai_khoan = document.getElementById("acc-user").value.trim();
+  const mat_khau = document.getElementById("acc-pass").value;
+  const vai_tro = document.getElementById("acc-role").value;
+  if (!ho_ten || !tai_khoan || !mat_khau) return showMsg("msg-taikhoan", "Vui lòng nhập đủ thông tin.", false);
   try {
     await apiFetch("/api/auth/dang-ky", { method: "POST", body: JSON.stringify({ ho_ten, tai_khoan, mat_khau, vai_tro }) });
-    showMsg(msgId, `Đã tạo tài khoản ${tai_khoan}.`);
-    [prefix === "reg" ? "reg-name" : "acc-name", prefix === "reg" ? "reg-user" : "acc-user", prefix === "reg" ? "reg-pass" : "acc-pass"].forEach(id => { const e = document.getElementById(id); if (e) e.value = ""; });
-    if (mode === "register") document.getElementById("reg-pass2").value = "";
+    showMsg("msg-taikhoan", `Đã tạo tài khoản ${tai_khoan}.`);
+    ["acc-name", "acc-user", "acc-pass"].forEach(id => { document.getElementById(id).value = ""; });
   } catch (e) {
-    showMsg(msgId, e.message, false);
+    showMsg("msg-taikhoan", e.message, false);
   }
 }
 
@@ -379,10 +340,22 @@ function formatPhutDaDo(phut) {
   return gio > 0 ? `${gio} giờ ${du} phút` : `${du} phút`;
 }
 
+// Backend lưu và trả về thời gian theo UTC (datetime.utcnow()), nhưng chuỗi
+// ISO không có hậu tố "Z"/offset - nếu đưa thẳng vào new Date(), trình
+// duyệt sẽ hiểu NHẦM là giờ địa phương (lệch múi giờ, VD lệch 7 tiếng ở
+// Việt Nam) thay vì UTC. Luôn coi chuỗi không có offset là UTC trước khi
+// parse, để hiển thị đúng giờ thực tế theo múi giờ của người xem.
+function parseGioApi(iso) {
+  if (!iso) return null;
+  const coOffset = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(iso);
+  return new Date(coOffset ? iso : iso + "Z");
+}
+
 function formatThoiGian(iso) {
   if (!iso) return "-";
   try {
-    return new Date(iso).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+    const d = parseGioApi(iso);
+    return d.toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
   } catch (_) { return iso; }
 }
 
@@ -401,6 +374,7 @@ async function taiDanhMuc() {
 
     fillSelect("in-khuvuc", khuVuc, "id", "ten_khu_vuc");
     fillSelect("dm-vitri-khuvuc", khuVuc, "id", "ten_khu_vuc");
+    fillSelectWithPlaceholder("dm-vitri-loaixe", loaiXe, "id", "ten_loai_xe", "— Mọi loại xe —");
     fillSelect("in-loaixe", loaiXe, "id", "ten_loai_xe");
     fillSelect("dm-gia-loaixe", loaiXe, "id", "ten_loai_xe");
     fillSelectWithPlaceholder("tc-khuvuc", khuVuc, "id", "ten_khu_vuc", "— Mọi khu vực —");
@@ -432,7 +406,11 @@ function fillSelect(id, items, valueKey, labelKey) {
 function fillSelectWithPlaceholder(id, items, valueKey, labelKey, placeholder) {
   const el = document.getElementById(id);
   if (!el) return;
+  const giaTriDangChon = el.value;
   el.innerHTML = `<option value="">${placeholder}</option>` + items.map(it => `<option value="${it[valueKey]}">${escapeHtml(it[labelKey])}</option>`).join("");
+  if (giaTriDangChon && items.some(it => String(it[valueKey]) === giaTriDangChon)) {
+    el.value = giaTriDangChon;
+  }
 }
 
 const KHUNG_GIO_LABEL = {
@@ -675,10 +653,15 @@ async function themLoaiXe() {
   } catch (e) { showMsg("msg-danhmuc", e.message, false); }
 }
 async function themViTri() {
+  const loaiXeVal = document.getElementById("dm-vitri-loaixe").value;
   try {
     await apiFetch("/api/danh-muc/vi-tri", {
       method: "POST",
-      body: JSON.stringify({ khu_vuc_id: Number(document.getElementById("dm-vitri-khuvuc").value), ma_vi_tri: document.getElementById("dm-vitri-ma").value }),
+      body: JSON.stringify({
+        khu_vuc_id: Number(document.getElementById("dm-vitri-khuvuc").value),
+        ma_vi_tri: document.getElementById("dm-vitri-ma").value,
+        loai_xe_cho_phep: loaiXeVal ? Number(loaiXeVal) : null,
+      }),
     });
     showMsg("msg-danhmuc", "Đã thêm vị trí.");
     document.getElementById("dm-vitri-ma").value = "";
@@ -693,12 +676,13 @@ async function themViTri() {
 async function themViTriHangLoat(soLuong) {
   const khuVucId = Number(document.getElementById("dm-vitri-khuvuc").value);
   const tienTo = document.getElementById("dm-vitri-tienlo").value.trim();
+  const loaiXeVal = document.getElementById("dm-vitri-loaixe").value;
   if (!khuVucId) return showMsg("msg-danhmuc", "Vui lòng chọn khu vực trước.", false);
   if (!tienTo) return showMsg("msg-danhmuc", "Vui lòng nhập chữ cái đầu, ví dụ: A.", false);
   try {
     const data = await apiFetch("/api/danh-muc/vi-tri/hang-loat", {
       method: "POST",
-      body: JSON.stringify({ khu_vuc_id: khuVucId, tien_to: tienTo, so_luong: soLuong }),
+      body: JSON.stringify({ khu_vuc_id: khuVucId, tien_to: tienTo, so_luong: soLuong, loai_xe_cho_phep: loaiXeVal ? Number(loaiXeVal) : null }),
     });
     const trung = data.bi_trung.length ? ` (bỏ qua ${data.bi_trung.length} mã đã tồn tại: ${data.bi_trung.slice(0, 6).join(", ")}${data.bi_trung.length > 6 ? "..." : ""})` : "";
     showMsg("msg-danhmuc", `Đã tạo thêm ${data.so_luong_da_tao} vị trí (${tienTo}1 → ${tienTo}${soLuong})${trung}.`, data.so_luong_da_tao > 0);
@@ -915,8 +899,8 @@ async function traCuu() {
         <td>${escapeHtml(l.ten_khu_vuc)}</td>
         <td>${escapeHtml(l.ma_vi_tri)}</td>
         <td>${escapeHtml(KHUNG_GIO_LABEL[l.hinh_thuc_gui] || "-")}</td>
-        <td>${l.thoi_gian_vao ?? ""}</td>
-        <td>${l.thoi_gian_ra ?? "-"}</td>
+        <td>${formatThoiGian(l.thoi_gian_vao)}</td>
+        <td>${formatThoiGian(l.thoi_gian_ra)}</td>
         <td>${l.phi_thu != null ? Number(l.phi_thu).toLocaleString() : "-"}</td>
         <td>${l.mat_ve ? `<span class="badge da_do" title="Đã thu phụ phí mất vé 10.000đ">Mất vé</span>` : "-"}</td>
         <td><span class="badge ${l.trang_thai === "dang_gui" ? "da_do" : "trong"}">${l.trang_thai === "dang_gui" ? "Đang gửi" : "Hoàn tất"}</span></td>
@@ -925,6 +909,37 @@ async function traCuu() {
 }
 
 // ---------- Thống kê ----------
+
+// Xuất báo cáo Excel cho đúng khoảng thời gian đang xem. Vì API xác thực
+// bằng Bearer token (không phải cookie), không thể dùng thẻ <a href> tải
+// trực tiếp - phải fetch kèm token rồi tự tạo link tải về.
+async function xuatExcelThongKe() {
+  const tu = document.getElementById("tk-tu").value;
+  const den = document.getElementById("tk-den").value;
+  if (!tu || !den) return showMsg("msg-thongke", "Vui lòng chọn khoảng thời gian trước.", false);
+  try {
+    const res = await fetch(`${API}/api/thong-ke/xuat-excel?tu_ngay=${tu}T00:00:00&den_ngay=${den}T23:59:59`, {
+      headers: authHeaders({}),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(dinhDangLoiApi(data));
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `bao-cao-bai-do-xe_${tu}_${den}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showMsg("msg-thongke", "Đã xuất file Excel.");
+  } catch (e) {
+    showMsg("msg-thongke", e.message, false);
+  }
+}
+
 async function taiThongKe() {
   const tu = document.getElementById("tk-tu").value;
   const den = document.getElementById("tk-den").value;
@@ -1037,4 +1052,3 @@ async function taiLichSu() {
 
 // ---------- Khởi động ----------
 if (TOKEN) initApp();
-taiCauHinhDangNhap();

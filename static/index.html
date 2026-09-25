@@ -7,45 +7,26 @@
   <title>Hệ thống quản lý bãi đỗ xe AI</title>
   <link rel="stylesheet" href="theme-base.css">
   <link rel="stylesheet" href="theme.css">
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 <div id="login-box">
   <div class="login-brand">PARKING <span>AI</span></div>
   <h2>Đăng nhập hệ thống</h2>
   <p class="muted">Quản lý bãi đỗ xe, doanh thu và phân tích AI trên một nền tảng.</p>
-  <div class="login-tabs" role="tablist" aria-label="Tài khoản">
-    <button class="login-tab active" id="login-tab-btn" onclick="showLoginPanel('login-panel')">Đăng nhập</button>
-    <button class="login-tab" id="register-tab-btn" onclick="showLoginPanel('register-panel')">Tạo tài khoản</button>
-  </div>
 
   <div id="login-panel" class="auth-panel">
     <input id="li-user" autocomplete="username" aria-label="Tài khoản" placeholder="Tài khoản">
     <input id="li-pass" type="password" autocomplete="current-password" aria-label="Mật khẩu" placeholder="Mật khẩu">
     <button class="btn" onclick="dangNhap()">Đăng nhập</button>
     <div id="li-msg"></div>
-    <div id="google-signin-divider" class="auth-divider hidden"><span>hoặc</span></div>
-    <div id="google-signin-btn" class="google-signin-slot"></div>
-  </div>
-
-  <div id="register-panel" class="auth-panel hidden">
-    <input id="reg-name" aria-label="Họ tên" placeholder="Họ và tên">
-    <input id="reg-user" autocomplete="username" aria-label="Tài khoản mới" placeholder="Tài khoản mới">
-    <input id="reg-pass" type="password" autocomplete="new-password" aria-label="Mật khẩu mới" placeholder="Mật khẩu">
-    <input id="reg-pass2" type="password" autocomplete="new-password" aria-label="Nhập lại mật khẩu" placeholder="Nhập lại mật khẩu">
-    <select id="reg-role" aria-label="Vai trò">
-      <option value="nhan_vien">Nhân viên</option>
-      <option value="quan_ly">Quản lý</option>
-    </select>
-    <button class="btn" onclick="dangKyTaiKhoan('register')">Tạo tài khoản</button>
-    <div id="reg-msg"></div>
+    <p class="muted login-note">Chưa có tài khoản? Liên hệ Quản lý để được cấp tài khoản trong mục "Tạo quản lý / nhân viên".</p>
   </div>
 </div>
 
 <div id="app" class="hidden">
   <header>
     <div class="brand-wordmark" aria-label="Parking AI">PARKING <span>AI</span></div>
-    <div class="header-user"><span id="whoami"></span><button class="btn secondary" onclick="dangXuat()">Đăng xuất</button></div>
+    <div class="header-user"><span id="dong-ho-he-thong" class="dong-ho" aria-label="Thời gian hệ thống hiện tại"></span><span id="whoami"></span><button class="btn secondary" onclick="dangXuat()">Đăng xuất</button></div>
   </header>
 
   <div class="app-layout">
@@ -191,6 +172,7 @@
             <div>
               <b>Thêm vị trí đỗ</b>
               <select id="dm-vitri-khuvuc" aria-label="Khu vực cho vị trí"></select>
+              <select id="dm-vitri-loaixe" aria-label="Loại xe cho phép đỗ"><option value="">— Mọi loại xe —</option></select>
               <input id="dm-vitri-ma" placeholder="Mã vị trí, ví dụ A-11">
               <button class="btn" onclick="themViTri()">Thêm vị trí</button>
               <div class="vitri-hangloat">
@@ -267,7 +249,8 @@
         <div id="card-thongke" class="card subpage-card">
           <div class="section-kicker">QUẢN TRỊ › THỐNG KÊ</div>
           <h2>Thống kê lưu lượng & doanh thu</h2>
-          <div class="row"><input id="tk-tu" type="date" aria-label="Từ ngày"><input id="tk-den" type="date" aria-label="Đến ngày"><button class="btn" onclick="taiThongKe()">Xem thống kê</button></div>
+          <div class="row"><input id="tk-tu" type="date" aria-label="Từ ngày"><input id="tk-den" type="date" aria-label="Đến ngày"><button class="btn" onclick="taiThongKe()">Xem thống kê</button><button class="btn secondary" onclick="xuatExcelThongKe()">⬇ Xuất Excel</button></div>
+          <div id="msg-thongke"></div>
           <div id="thong-ke-view"></div>
         </div>
       </section>
@@ -312,7 +295,7 @@
             <input id="acc-pass" type="password" placeholder="Mật khẩu">
             <select id="acc-role"><option value="nhan_vien">Nhân viên</option><option value="quan_ly">Quản lý</option></select>
           </div>
-          <button class="btn" onclick="dangKyTaiKhoan('admin')">Tạo tài khoản</button>
+          <button class="btn" onclick="dangKyTaiKhoan()">Tạo tài khoản</button>
           <div id="msg-taikhoan"></div>
         </div>
       </section>

@@ -1,73 +1,58 @@
-from unittest.mock import patch, Mock
-
-import pytest
 from fastapi import HTTPException
 
+import pytest
+
 from app import models, schemas, security
-from app.routers.auth import dang_nhap_google
+from app.routers.auth import dang_ky
+from app.main import _dam_bao_co_tai_khoan_quan_ly_mac_dinh
 
 
-def _gia_lap_phan_hoi_google(payload: dict) -> Mock:
-    resp = Mock()
-    resp.status_code = 200
-    resp.json.return_value = payload
-    return resp
+def test_dang_ky_can_quyen_quan_ly(seeded_db):
+    db = seeded_db["db"]
+    nhan_vien = models.NguoiDung(ho_ten="NV", tai_khoan="nv1", mat_khau_hash=security.hash_password("123456"),
+                                  vai_tro=models.VaiTro.nhan_vien)
+    db.add(nhan_vien)
+    db.commit()
 
-
-def test_dang_nhap_google_chua_cau_hinh_bao_loi(db_session, monkeypatch):
-    monkeypatch.setattr(security, "GOOGLE_CLIENT_ID", "")
     with pytest.raises(HTTPException):
-        dang_nhap_google(schemas.GoogleLoginRequest(id_token="bat-ky"), db=db_session)
+        dang_ky(schemas.NguoiDungCreate(ho_ten="X", tai_khoan="x1", mat_khau="123456", vai_tro=models.VaiTro.nhan_vien),
+                db=db, _=security.require_quan_ly(nhan_vien))
 
 
-def test_dang_nhap_google_tao_tai_khoan_moi_la_nhan_vien(db_session, monkeypatch):
-    monkeypatch.setattr(security, "GOOGLE_CLIENT_ID", "test-client-id")
-    payload = {"aud": "test-client-id", "sub": "google-sub-1", "email": "a@example.com",
-               "email_verified": "true", "name": "Nguyen Van A"}
-    with patch("app.security.requests.get", return_value=_gia_lap_phan_hoi_google(payload)):
-        ket_qua = dang_nhap_google(schemas.GoogleLoginRequest(id_token="tok"), db=db_session)
+def test_dang_ky_quan_ly_tao_duoc_tai_khoan(seeded_db):
+    db = seeded_db["db"]
+    quan_ly = models.NguoiDung(ho_ten="QL", tai_khoan="ql1", mat_khau_hash=security.hash_password("123456"),
+                                vai_tro=models.VaiTro.quan_ly)
+    db.add(quan_ly)
+    db.commit()
 
-    assert ket_qua.vai_tro == models.VaiTro.nhan_vien
-    user = db_session.query(models.NguoiDung).filter(models.NguoiDung.google_sub == "google-sub-1").first()
+    ket_qua = dang_ky(schemas.NguoiDungCreate(ho_ten="Nhan vien moi", tai_khoan="nv-moi", mat_khau="123456",
+                                               vai_tro=models.VaiTro.nhan_vien),
+                       db=db, _=security.require_quan_ly(quan_ly))
+    assert ket_qua.tai_khoan == "nv-moi"
+
+
+def test_khoi_dong_tu_tao_tai_khoan_quan_ly_mac_dinh(monkeypatch, tmp_path):
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+    import app.database as dbmod
+    import app.main as mainmod
+
+    engine = create_engine(f"sqlite:///{tmp_path}/test.db")
+    Session = sessionmaker(bind=engine)
+    dbmod.Base.metadata.create_all(bind=engine)
+    monkeypatch.setattr(mainmod, "SessionLocal", Session)
+    monkeypatch.setattr(mainmod.models, "NguoiDung", models.NguoiDung)
+
+    _dam_bao_co_tai_khoan_quan_ly_mac_dinh()
+
+    db = Session()
+    user = db.query(models.NguoiDung).filter(models.NguoiDung.tai_khoan == "quanly").first()
     assert user is not None
-    assert user.tai_khoan == "a@example.com"
-    assert user.mat_khau_hash is None
+    assert user.vai_tro == models.VaiTro.quan_ly
+    assert security.verify_password("123456", user.mat_khau_hash)
 
-
-def test_dang_nhap_google_lien_ket_tai_khoan_da_co_theo_email(db_session, monkeypatch):
-    monkeypatch.setattr(security, "GOOGLE_CLIENT_ID", "test-client-id")
-    # Quản lý đã tạo trước 1 tài khoản quan_ly với tai_khoan = email, chưa có google_sub
-    co_san = models.NguoiDung(ho_ten="Sep truong", tai_khoan="boss@example.com",
-                               mat_khau_hash=security.hash_password("123456"), vai_tro=models.VaiTro.quan_ly)
-    db_session.add(co_san)
-    db_session.commit()
-
-    payload = {"aud": "test-client-id", "sub": "google-sub-2", "email": "boss@example.com",
-               "email_verified": "true", "name": "Sep Truong"}
-    with patch("app.security.requests.get", return_value=_gia_lap_phan_hoi_google(payload)):
-        ket_qua = dang_nhap_google(schemas.GoogleLoginRequest(id_token="tok"), db=db_session)
-
-    # Phải LIÊN KẾT vào tài khoản quan_ly có sẵn, không tạo tài khoản nhân viên mới
-    assert ket_qua.vai_tro == models.VaiTro.quan_ly
-    assert db_session.query(models.NguoiDung).filter(models.NguoiDung.tai_khoan == "boss@example.com").count() == 1
-
-
-def test_dang_nhap_google_lan_sau_khop_theo_sub(db_session, monkeypatch):
-    monkeypatch.setattr(security, "GOOGLE_CLIENT_ID", "test-client-id")
-    payload = {"aud": "test-client-id", "sub": "google-sub-3", "email": "c@example.com",
-               "email_verified": "true", "name": "Nguyen Van C"}
-    with patch("app.security.requests.get", return_value=_gia_lap_phan_hoi_google(payload)):
-        dang_nhap_google(schemas.GoogleLoginRequest(id_token="tok"), db=db_session)
-        # đăng nhập lần 2 với cùng sub -> không tạo thêm tài khoản mới
-        dang_nhap_google(schemas.GoogleLoginRequest(id_token="tok"), db=db_session)
-
-    assert db_session.query(models.NguoiDung).filter(models.NguoiDung.google_sub == "google-sub-3").count() == 1
-
-
-def test_dang_nhap_google_email_chua_xac_minh_bao_loi(db_session, monkeypatch):
-    monkeypatch.setattr(security, "GOOGLE_CLIENT_ID", "test-client-id")
-    payload = {"aud": "test-client-id", "sub": "google-sub-4", "email": "d@example.com",
-               "email_verified": "false", "name": "D"}
-    with patch("app.security.requests.get", return_value=_gia_lap_phan_hoi_google(payload)):
-        with pytest.raises(HTTPException):
-            dang_nhap_google(schemas.GoogleLoginRequest(id_token="tok"), db=db_session)
+    # Gọi lần 2 không được tạo thêm tài khoản trùng
+    _dam_bao_co_tai_khoan_quan_ly_mac_dinh()
+    assert db.query(models.NguoiDung).count() == 1
+    db.close()
