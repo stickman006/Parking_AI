@@ -19,12 +19,11 @@ from typing import Optional
 import requests
 
 SYSTEM_PROMPT = (
-    "Bạn là trợ lý phân tích vận hành bãi đỗ xe. Bạn CHỈ được nhận xét, "
-    "tổng hợp dựa trên dữ liệu số liệu được cung cấp trong phần dữ liệu "
-    "của người dùng (JSON). TUYỆT ĐỐI không được tự bịa ra số liệu không "
-    "có trong dữ liệu được cung cấp. Nếu dữ liệu rỗng hoặc không đủ để "
-    "phân tích, hãy trả lời rõ ràng rằng không đủ dữ liệu thay vì suy diễn. "
-    "Trình bày câu trả lời ngắn gọn, có cấu trúc, bằng tiếng Việt."
+    "Bạn là một trợ lý AI quản lý bãi đỗ xe thông minh, thân thiện và chuyên nghiệp.\n"
+    "HƯỚNG DẪN TRẢ LỜI:\n"
+    "1. Nếu người dùng chào hỏi hoặc xã giao (vd: 'chào bạn', 'hi', 'bạn là ai'), hãy đáp lại thân thiện, lịch sự và giới thiệu ngắn gọn bạn có thể giúp gì cho họ trong việc quản lý bãi xe.\n"
+    "2. Khi phân tích, trả lời câu hỏi chuyên môn: Hãy dùng dữ liệu JSON được cung cấp để đưa ra câu trả lời chính xác, rõ ràng, trực diện vào ý người dùng hỏi. Không bịa đặt số liệu không có trong JSON.\n"
+    "3. Trình bày ngắn gọn, văn phong tự nhiên, dễ đọc bằng tiếng Việt."
 )
 
 THONG_BAO_KHONG_DU_DU_LIEU = (
@@ -45,13 +44,14 @@ def _goi_ai_engine_that(system_prompt: str, user_prompt: str) -> Optional[str]:
     hoàn toàn MIỄN PHÍ, không cần Internet), raise AIEngineError nếu có
     key nhưng lệnh gọi thất bại/timeout (2.4.3: xử lý lỗi AI Engine).
 
-    Thứ tự ưu tiên: ANTHROPIC_API_KEY -> OPENAI_API_KEY -> GROQ_API_KEY.
-    GROQ_API_KEY dùng cho Groq (https://console.groq.com) - nhà cung cấp
-    có API MIỄN PHÍ (free tier), tương thích định dạng OpenAI, phù hợp khi
-    muốn có câu trả lời do LLM thật sinh ra mà không tốn phí.
+    Thứ tự ưu tiên: ANTHROPIC_API_KEY -> OPENAI_API_KEY -> GEMINI_API_KEY
+    -> GROQ_API_KEY. GEMINI_API_KEY (Google AI Studio) và GROQ_API_KEY
+    (console.groq.com) đều có gói MIỄN PHÍ (free tier) - dùng 1 trong 2
+    nếu muốn có câu trả lời do LLM thật sinh ra mà không tốn phí.
     """
     anthropic_key = os.getenv("ANTHROPIC_API_KEY")
     openai_key = os.getenv("OPENAI_API_KEY")
+    gemini_key = os.getenv("GEMINI_API_KEY")
     groq_key = os.getenv("GROQ_API_KEY")
 
     try:
@@ -92,6 +92,21 @@ def _goi_ai_engine_that(system_prompt: str, user_prompt: str) -> Optional[str]:
             resp.raise_for_status()
             data = resp.json()
             return data["choices"][0]["message"]["content"]
+
+        if gemini_key:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={gemini_key}"
+            payload = {
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [{"text": f"{system_prompt}\n\nYêu cầu: {user_prompt}"}]
+                    }
+                ]
+            }
+            resp = requests.post(url, json=payload, timeout=15)
+            resp.raise_for_status()
+            data = resp.json()
+            return data["candidates"][0]["content"]["parts"][0]["text"]
 
         if groq_key:
             resp = requests.post(

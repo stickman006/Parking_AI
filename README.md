@@ -44,19 +44,23 @@ chấm bài / demo ngay không cần cấu hình gì thêm.
 
 Nếu muốn câu trả lời do một LLM thật sinh ra, đặt MỘT trong các biến môi
 trường sau trước khi chạy (hệ thống tự dò theo thứ tự Anthropic → OpenAI
-→ Groq, không có thì tự rơi về bộ sinh nội bộ):
+→ Gemini → Groq, không có thì tự rơi về bộ sinh nội bộ):
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."   # Claude (trả phí)
 # hoặc
 export OPENAI_API_KEY="sk-..."          # GPT (trả phí)
 # hoặc — LỰA CHỌN MIỄN PHÍ:
-export GROQ_API_KEY="gsk_..."           # Groq (có free tier, đăng ký tại console.groq.com)
+export GEMINI_API_KEY="AIza..."         # Gemini (free tier, lấy tại aistudio.google.com/app/apikey)
+# hoặc — LỰA CHỌN MIỄN PHÍ:
+export GROQ_API_KEY="gsk_..."           # Groq (free tier, đăng ký tại console.groq.com)
 ```
 
-Groq là lựa chọn AI Engine **miễn phí** khuyến nghị: tạo tài khoản tại
-https://console.groq.com, vào mục "API Keys" để lấy `GROQ_API_KEY` (không
-cần thẻ thanh toán ở gói free tier).
+Gemini hoặc Groq đều là lựa chọn AI Engine **miễn phí** phù hợp: Gemini
+lấy key tại https://aistudio.google.com/app/apikey (đăng nhập bằng tài
+khoản Google, không cần thẻ thanh toán ở free tier); Groq lấy key tại
+https://console.groq.com, vào mục "API Keys" (cũng không cần thẻ thanh
+toán ở gói free tier). Chỉ cần đặt MỘT trong hai biến trên, không cần cả hai.
 
 ## 5. Tài khoản đăng nhập
 
