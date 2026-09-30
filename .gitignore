@@ -11,3 +11,5 @@ env/
 .DS_Store
 *.egg-info/
 .vscode/
+
+/parking_ai_system_hong_liquid_v10/
