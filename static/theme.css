@@ -288,3 +288,25 @@ button.btn.danger:hover{background:#fff0f3}
 .manage-row .ictu-select-trigger{min-height:38px;font-size:13px;padding:8px 10px}
 .grid>div>.ictu-select{margin-bottom:9px}
 @media(prefers-reduced-motion:reduce){.ictu-select-trigger,.ictu-select-arrow{transition:none}}
+
+/* Lịch chọn ngày ICTU. */
+.ictu-date{position:relative;width:100%;min-width:0}
+.ictu-date-native{position:absolute!important;width:1px!important;height:1px!important;min-height:0!important;margin:0!important;padding:0!important;opacity:0;pointer-events:none;clip-path:inset(50%)}
+.ictu-date-trigger{width:100%;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 13px;border:1px solid #edc3d4;border-radius:11px;background:linear-gradient(180deg,#fffafb,#fff2f7);color:var(--txt);font:inherit;font-size:15px;text-align:left;cursor:pointer}
+.ictu-date-trigger:hover{background:#fff0f6;border-color:var(--accent)}
+.ictu-date-trigger:focus-visible,.ictu-date-trigger[aria-expanded="true"]{outline:none;border-color:var(--pri);box-shadow:0 0 0 4px rgba(217,45,115,.12)}
+.ictu-date-trigger:disabled{opacity:.55;cursor:not-allowed}.ictu-date-icon{color:var(--pri-dark);font-size:23px;line-height:1}
+.ictu-calendar{position:fixed;z-index:1001;padding:14px;border:1px solid #efbed1;border-radius:18px;background:#fffafb;box-shadow:0 16px 42px rgba(117,20,61,.2);overflow:auto;overscroll-behavior:contain;color:var(--txt)}
+.ictu-calendar[hidden]{display:none}
+.ictu-calendar-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;color:var(--pri-dark)}
+.ictu-calendar button{font:inherit;cursor:pointer;border:0;border-radius:10px;color:var(--pri-dark);background:transparent}
+.ictu-calendar-head button{width:34px;height:34px;font-size:26px;background:#fce3ee}
+.ictu-calendar-week,.ictu-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+.ictu-calendar-week{font-size:12px;font-weight:700;color:#ad5a7b;margin-bottom:7px}
+.ictu-calendar-grid button{height:36px;font-size:14px;font-weight:500}
+.ictu-calendar button:hover{background:#fce3ee}.ictu-calendar button:focus-visible{outline:2px solid var(--pri);outline-offset:1px;background:#fce3ee}
+.ictu-calendar-grid .other-month{color:#b69aa7}.ictu-calendar-grid .today{box-shadow:inset 0 0 0 1px #d92d73;font-weight:800}
+.ictu-calendar-grid .selected,.ictu-calendar-grid .selected:hover{color:#fff;background:#d92d73;font-weight:800}
+.ictu-calendar button:disabled{opacity:.35;cursor:not-allowed}
+.ictu-calendar-footer{display:flex;justify-content:space-between;gap:8px;border-top:1px solid #f3d6e2;margin-top:12px;padding-top:10px}
+.ictu-calendar-footer button{padding:8px 12px;font-size:13px;font-weight:700;background:#fff0f6}
