@@ -266,3 +266,25 @@ button.btn.danger:hover{background:#fff0f3}
 .login-brand{display:flex;align-items:center;justify-content:center;gap:14px;text-align:left}
 .login-brand .ictu-logo{width:72px;height:72px}
 @media(max-width:640px){.brand-wordmark{gap:8px}.brand-wordmark .ictu-logo{width:38px;height:38px}.login-brand .ictu-logo{width:58px;height:58px}}
+
+/* Danh sách chọn theo nhận diện ICTU. */
+.ictu-select{position:relative;min-width:0;width:100%}
+.ictu-select-native{position:absolute!important;width:1px!important;height:1px!important;min-height:0!important;padding:0!important;margin:0!important;opacity:0;pointer-events:none;clip-path:inset(50%)}
+.ictu-select-trigger{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:44px;padding:10px 13px;border:1px solid #edc3d4;border-radius:11px;background:linear-gradient(180deg,#fffafb,#fff2f7);color:var(--txt);font:inherit;font-size:15px;text-align:left;cursor:pointer;transition:border-color .18s,box-shadow .18s,background .18s}
+.ictu-select-trigger:hover{border-color:var(--accent);background:#fff0f6}
+.ictu-select-trigger:focus-visible,.ictu-select-trigger[aria-expanded="true"]{outline:none;border-color:var(--pri);box-shadow:0 0 0 4px rgba(217,45,115,.12)}
+.ictu-select-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ictu-select-arrow{width:8px;height:8px;border-right:2px solid var(--pri-dark);border-bottom:2px solid var(--pri-dark);transform:rotate(45deg);margin:0 3px 4px 0;flex:none;transition:transform .18s}
+[aria-expanded="true"] .ictu-select-arrow{transform:rotate(225deg);margin-bottom:0}
+.ictu-select-trigger:disabled{opacity:.55;cursor:not-allowed;background:#f7edf1}
+.ictu-select-menu{position:fixed;z-index:1000;overflow:auto;padding:6px;border:1px solid #efbed1;border-radius:14px;background:#fffafb;box-shadow:0 16px 42px rgba(117,20,61,.2);overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#df8bab #fff1f6}
+.ictu-select-menu[hidden]{display:none}
+.ictu-select-option{position:relative;padding:11px 36px 11px 12px;border-radius:9px;color:var(--txt);font-size:14px;line-height:1.4;cursor:pointer;overflow-wrap:anywhere}
+.ictu-select-option:hover,.ictu-select-option.is-active{background:#fce3ee;color:var(--pri-dark)}
+.ictu-select-option[aria-selected="true"]{background:#f8cee0;color:#951347;font-weight:700}
+.ictu-select-option[aria-selected="true"]::after{content:"✓";position:absolute;right:13px;color:#b21855;font-weight:800}
+.ictu-select-option.is-disabled{opacity:.4;cursor:not-allowed}
+.ictu-select-empty{padding:14px;color:var(--muted);font-size:14px}
+.manage-row .ictu-select-trigger{min-height:38px;font-size:13px;padding:8px 10px}
+.grid>div>.ictu-select{margin-bottom:9px}
+@media(prefers-reduced-motion:reduce){.ictu-select-trigger,.ictu-select-arrow{transition:none}}
