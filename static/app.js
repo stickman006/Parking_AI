@@ -67,7 +67,9 @@ async function dangNhap() {
 }
 
 function dangXuat() {
-  localStorage.clear();
+  localStorage.removeItem("token");
+  localStorage.removeItem("vai_tro");
+  localStorage.removeItem("ho_ten");
   location.reload();
 }
 
